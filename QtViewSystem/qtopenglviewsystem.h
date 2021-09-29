@@ -19,11 +19,12 @@ class QtOpenGLViewSystem : public QOpenGLWindow
     OpenGL_View * contentView = nullptr;
 public:
     QScopedPointer<QTOpenGLViewSystemWindowData> windowData;
-    QtOpenGLViewSystem();
+    QtOpenGLViewSystem(UpdateBehavior updateBehavior = NoPartialUpdate);
 
     ~QtOpenGLViewSystem();
 
     void setContentView(OpenGL_View * view);
+    void setContentView(OpenGL_View * view, OpenGL_View::LayoutParams * params);
 
     void initializeGL() override;
     void resizeGL(int w, int h) override;

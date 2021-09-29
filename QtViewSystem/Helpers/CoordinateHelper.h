@@ -9,16 +9,16 @@ class CoordinateHelper
 {
 public:
     struct CoordinateInfo {
-        QRectF rect;
-        QPointF rectTopLeft;
-        QPointF rectBottomRight;
-        QSizeF rectSize;
-        qreal rectWidth;
-        qreal rectHeight;
-        QRectF clipRect;
+        QRect rect;
+        QPoint rectTopLeft;
+        QPoint rectBottomRight;
+        QSize rectSize;
+        int rectWidth;
+        int rectHeight;
+        QRect clipRect;
         CoordinateInfo();;
-        explicit CoordinateInfo(float x1, float y1, float x2, float y2);;
-        CoordinateInfo(const QRectF & r);;
+        explicit CoordinateInfo(int x1, int y1, int x2, int y2);;
+        CoordinateInfo(const QRect & r);;
     };
 
     CoordinateInfo relativeCoordinates;

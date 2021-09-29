@@ -21,8 +21,8 @@ public:
 
     // OpenGLView interface
 public:
-    virtual void onResize(qreal w, qreal h) override;
-    virtual void onPaintGL() override;
+    virtual void onResizeGL(int window_w, int window_h) override;
+    virtual void onPaintGL() override final;
     virtual bool isLayout() const override final;
 };
 

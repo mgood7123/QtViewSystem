@@ -5,13 +5,13 @@
 
 class OpenGL_TextView : public OpenGL_View
 {
-public:
-    ANIMATION_GROUP_HELPER_PUBLIC_BASE(OpenGL_TextView);
 private:
     QString text;
     int textSize;
     QColor textColor;
 public:
+
+    ANIMATION_GROUP_HELPER_PUBLIC_BASE_OVERRIDE(OpenGL_TextView);
 
     OpenGL_TextView();
     OpenGL_TextView(const QString &text);

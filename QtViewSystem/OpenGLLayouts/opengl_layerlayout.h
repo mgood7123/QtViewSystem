@@ -6,10 +6,11 @@
 class OpenGL_LayerLayout : public OpenGL_Layout
 {
 public:
+
     // OpenGL_View interface
 public:
-    virtual void onResize(qreal w, qreal h) override;
-    virtual void onPaintGL() override;
+    virtual void onMeasure(int width, int height) override;
+    virtual void onResizeGL(int window_w, int window_h) override;
 };
 
 #endif // OPENGL_LAYERLAYOUT_H

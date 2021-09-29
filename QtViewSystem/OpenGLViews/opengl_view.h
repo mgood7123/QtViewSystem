@@ -1,8 +1,16 @@
 #ifndef OPENGL_VIEW_H
 #define OPENGL_VIEW_H
 
-#include <QOpenGLExtraFunctions>
 #include <QDebug>
+#include <QDir>
+#include <QDirIterator>
+#include <QFile>
+#include <QOpenGLExtraFunctions>
+#include <QOpenGLFramebufferObject>
+#include <QOpenGLTexture>
+#include <QOpenGLShader>
+#include <QOpenGLShaderProgram>
+
 #include <qtopenglviewsystemwindowdata.h>
 
 #include <Helpers/AnimationGroupHelper.h>
@@ -20,24 +28,27 @@ class OpenGL_View :
         public PropertyAnimatorHelper,
         public WindowDataHelper
 {
-    QSizeF measuredDimensions;
+    QSize measuredDimensions;
 public:
 
-//    ANIMATION_GROUP_HELPER_PUBLIC_BASE(OpenGL_View);
+    ANIMATION_GROUP_HELPER_PUBLIC_BASE(OpenGL_View);
 
     TimeEngine timeEngine;
 
-    QSizeF getSize();
+    QSize getWindowSize();
 
-    int getWidth();
+    int getWindowWidth();
 
-    int getHeight();
+    int getWindowHeight();
 
     OpenGL_View();
 
     virtual ~OpenGL_View();
 
-    void onResize(const QSizeF & size);
+    enum MeasureSpec {
+        MATCH_PARENT = -1,
+        WRAP_CONTENT = -2
+    };
 
     class LayoutParams {
     public:
@@ -48,13 +59,11 @@ public:
             GRAVITY_RIGHT
         };
 
-        GRAVITY gravity;
+        int width = MATCH_PARENT;
+        int height = MATCH_PARENT;
+        GRAVITY gravity = GRAVITY_NONE;
 
-        constexpr inline
-        LayoutParams() : gravity(GRAVITY_NONE) {}
-
-        constexpr inline
-        LayoutParams(GRAVITY gravity) : gravity(gravity) {}
+        LayoutParams(int width, int height);
 
         template <typename T>
         T * castToType() {
@@ -80,7 +89,7 @@ private:
 
 public:
     OpenGL_View * parent = nullptr;
-    float weight;
+    float weight = 0;
 
     template <typename T>
     T * castToType() {
@@ -101,23 +110,23 @@ public:
 
     void setLayoutParams(LayoutParams *params);
 
-    constexpr static QSizeF INVALID_MEASUREMENT_DIMENSION = {-1, -1};
-    QRectF layoutData;
-    QRectF cache_layoutData;
+    constexpr static QSize INVALID_MEASUREMENT_DIMENSION = {-1, -1};
+    QRect layoutData;
+    QRect cache_layoutData;
 
-    void setMeasuredDimensions(const QSizeF & size);
-    QSizeF getMeasuredDimensions();
-    qreal getMeasuredWidth();
-    qreal getMeasuredHeight();
+    void setMeasuredDimensions(int width, int height);
+    void setMeasuredDimensions(const QSize & size);
+    QSize getMeasuredDimensions();
+    int getMeasuredWidth();
+    int getMeasuredHeight();
 
-    void measure();
-    virtual void onMeasure();
-    void layout(const QRectF &dimensions);
-    virtual void onLayout(bool changed, const QRectF &dimensions);
+    void measure(int width, int height);
+    virtual void onMeasure(int width, int height);
 
-    void buildCoordinates(const QRectF & relativeCoordinates);
+    void buildCoordinates(const QRect & relativeCoordinates);
 
-    virtual void onResize(qreal w, qreal h);
+    void onResizeGL(QSize window_size);
+    virtual void onResizeGL(int window_w, int window_h);
 
     virtual void onAddedToLayout();
     virtual void onRemovedFromLayout();
@@ -126,15 +135,14 @@ public:
 
     virtual bool isLayout() const;
 
-    void setGLViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
-        if (paintHolder.glES3Functions != nullptr) {
-            paintHolder.glES3Functions->glViewport(x, y, width, height);
-        }
-    };
+    void setGLViewport(GLint x, GLint y, GLsizei width, GLsizei height);;
 
-    void setGLViewport(const QRect & widthHeightCoordinates) {
-        setGLViewport(widthHeightCoordinates.x(), widthHeightCoordinates.y(), widthHeightCoordinates.width(), widthHeightCoordinates.height());
-    };
+    void setGLViewport(const QRect & widthHeightCoordinates);;
 };
+
+#define LAYOUT_PARAMS__MATCH_PARENT(type) new type(OpenGL_View::MATCH_PARENT, OpenGL_View::MATCH_PARENT)
+#define LAYOUT_PARAMS__WRAP_CONTENT(type) new type(OpenGL_View::WRAP_CONTENT, OpenGL_View::WRAP_CONTENT)
+#define LAYOUT_PARAMS__MATCH_PARENT_WRAP_CONTENT(type) new type(OpenGL_View::MATCH_PARENT, OpenGL_View::WRAP_CONTENT)
+#define LAYOUT_PARAMS__WRAP_CONTENT_MATCH_PARENT(type) new type(OpenGL_View::WRAP_CONTENT, OpenGL_View::MATCH_PARENT)
 
 #endif // OPENGL_VIEW_H

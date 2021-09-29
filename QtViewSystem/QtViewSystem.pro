@@ -45,6 +45,13 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 DISTFILES += \
+    OpenGL Shaders/default_framebuffer_renderer.fsh \
+    OpenGL Shaders/default_framebuffer_renderer.vsh \
+    OpenGL Shaders/example_fragment_desktop.frag \
+    OpenGL Shaders/example_fragment_es2.fsh \
+    OpenGL Shaders/example_vertex_desktop.vsh \
+    OpenGL Shaders/example_vertex_es2.vsh \
+    OpenGL Shaders/s.frag \
     android/AndroidManifest.xml \
     android/build.gradle \
     android/gradle.properties \
@@ -58,3 +65,6 @@ contains(ANDROID_TARGET_ARCH,arm64-v8a) {
     ANDROID_PACKAGE_SOURCE_DIR = \
         $$PWD/android
 }
+
+RESOURCES += \
+    Resource_Files.qrc

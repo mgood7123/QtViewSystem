@@ -67,10 +67,10 @@ void OpenGL_TextView::onAddedToLayout()
     timeEngine.physicsTimeStep = 0.01666666/2;
     timeEngine.physicsCallback = [&](const TimeEngine & timeEngine_) {
     };
-    startAnimation();
+//    startAnimation();
 }
 
 void OpenGL_TextView::onRemovedFromLayout()
 {
-    stopAnimation();
+//    stopAnimation();
 }

@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>OpenGL Shaders/default_framebuffer_renderer.vsh</file>
+        <file>OpenGL Shaders/default_framebuffer_renderer.fsh</file>
+    </qresource>
+</RCC>

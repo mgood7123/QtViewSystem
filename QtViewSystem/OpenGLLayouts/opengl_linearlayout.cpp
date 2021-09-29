@@ -1,12 +1,6 @@
 #include "opengl_linearlayout.h"
 
-void OpenGL_LinearLayout::onMeasure()
-{
-    for (OpenGL_View *view : children) view->measure();
-    setMeasuredDimensions({100, 100});
-}
-
-void OpenGL_LinearLayout::onLayout(bool changed, const QRectF &dimensions)
+void OpenGL_LinearLayout::onMeasure(int width, int height)
 {
     // for a linear layout, we divide the size by the children count
 
@@ -18,8 +12,6 @@ void OpenGL_LinearLayout::onLayout(bool changed, const QRectF &dimensions)
     //23:26:50 smallville7123: child_1.section = ( 1 - (childAt(0).weight / sum_of_weights ) );      child_2.section = ( 1 - (childAt(1).weight / sum_of_weights ) )
     //23:27:08 smallville7123: _section  *
     //23:28:47 Roughy: that should give you 0.5 for each of them. Multiply by 100 gives you 50 for each
-
-    auto canvasSize = getSize();
 
     float weightSum = 0;
 
@@ -33,11 +25,11 @@ void OpenGL_LinearLayout::onLayout(bool changed, const QRectF &dimensions)
     }
 
     bool first = true;
-    QRectF drawPosition = {0, 0, 0, 0};
-    qreal section = 0;
-    qreal prevSection = 0;
+    QRect drawPosition = {0, 0, 0, 0};
+    int section = 0;
+    int prevSection = 0;
     for (OpenGL_View *view : children) {
-        float multiplier;
+        float multiplier = 0;
         auto * l = view->getLayoutParams()->castToType<LinearLayoutParams>();
         if (l == nullptr) {
             multiplier = 1 / weightSum;
@@ -46,20 +38,20 @@ void OpenGL_LinearLayout::onLayout(bool changed, const QRectF &dimensions)
         }
         prevSection = section;
         if (orientation == Horizontal) {
-            section = multiplier * canvasSize.width();
+            section = multiplier * width;
             if (first) {
                 first = false;
-                drawPosition.setHeight(canvasSize.height());
+                drawPosition.setHeight(height);
                 drawPosition.setWidth(section);
             } else {
                 drawPosition.translate(prevSection, 0);
                 drawPosition.setWidth(drawPosition.width() + section);
             }
         } else {
-            section = multiplier * canvasSize.height();
+            section = multiplier * height;
             if (first) {
                 first = false;
-                drawPosition.setWidth(canvasSize.width());
+                drawPosition.setWidth(width);
                 drawPosition.setHeight(section);
             } else {
                 drawPosition.translate(0, prevSection);
@@ -67,6 +59,7 @@ void OpenGL_LinearLayout::onLayout(bool changed, const QRectF &dimensions)
             }
         }
         view->buildCoordinates(drawPosition);
-        view->layout(view->relativeCoordinates.rect);
+        view->measure(drawPosition.width(), drawPosition.height());
     }
+    setMeasuredDimensions(width, height);
 }
