@@ -11,8 +11,6 @@ private:
     QColor textColor;
 public:
 
-    ANIMATION_GROUP_HELPER_PUBLIC_BASE_OVERRIDE(OpenGL_TextView);
-
     OpenGL_TextView();
     OpenGL_TextView(const QString &text);
     OpenGL_TextView(const int &textSize);
@@ -23,10 +21,9 @@ public:
     OpenGL_TextView(const QString &text, const int &textSize, const QColor &textColor);
 
     // OpenGLView interface
+private:
+    virtual void onPaintGL(QPainter * painter, QOpenGLFramebufferObject * defaultFBO) override;
 public:
-
-
-    virtual void onPaintGL() override;
 
     const QString &getText() const;
     OpenGL_TextView * setText(const QString &newText);

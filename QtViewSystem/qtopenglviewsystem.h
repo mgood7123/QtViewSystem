@@ -6,6 +6,7 @@
 #include <QTimer>
 #include "OpenGLViews/opengl_view.h"
 #include "OpenGLViews/opengl_textview.h"
+#include "OpenGLViews/opengl_colorview.h"
 #include "OpenGLLayouts/opengl_layout.h"
 #include "OpenGLLayouts/opengl_layerlayout.h"
 #include "OpenGLLayouts/opengl_linearlayout.h"

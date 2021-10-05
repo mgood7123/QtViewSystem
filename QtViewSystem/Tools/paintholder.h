@@ -16,6 +16,8 @@ public:
     QOpenGLFunctions * glES2Functions = nullptr;
     QOpenGLExtraFunctions* glES3Functions = nullptr;
 
+    QPainter * begin();
+
     void resize(const QSize & size);
 
     void resize(const int & width, const int & height);

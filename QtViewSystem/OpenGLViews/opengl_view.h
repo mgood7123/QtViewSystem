@@ -5,33 +5,66 @@
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
+
+// OpenGL
+#include <QOpenGLContext>
+#include <QOpenGLContextGroup>
 #include <QOpenGLExtraFunctions>
 #include <QOpenGLFramebufferObject>
 #include <QOpenGLTexture>
+#include <QOpenGLTextureBlitter>
+#include <QOpenGLDebugLogger>
+#include <QOpenGLDebugMessage>
+#include <QOpenGLTimeMonitor>
+#include <QOpenGLTimerQuery>
+#include <QOpenGLTimeMonitor>
 #include <QOpenGLShader>
 #include <QOpenGLShaderProgram>
 
+
 #include <qtopenglviewsystemwindowdata.h>
 
-#include <Helpers/AnimationGroupHelper.h>
+#include <QParallelAnimationGroup>
+#include <QSequentialAnimationGroup>
+
 #include <Helpers/CoordinateHelper.h>
 #include <Helpers/PaintHolderOpenGLHelper.h>
 #include <Helpers/PropertyAnimatorHelper.h>
 #include <Helpers/WindowDataHelper.h>
 
+#include <Tools/PixelToNDC.h>
 #include <Tools/TimeEngine.h>
 #include <Tools/paintholder.h>
 
 class OpenGL_View :
         public CoordinateHelper,
         public PaintHolderOpenGLHelper,
-        public PropertyAnimatorHelper,
         public WindowDataHelper
 {
     QSize measuredDimensions;
+    static constexpr const char * NO_TAG = "<INTERNAL_VIEW__NO_TAG>";
+    const char * tag = NO_TAG;
+public:
+    void setTag(const char * name);
+    const char * getTag();
+
+protected:
+QParallelAnimationGroup animationGroup;
 public:
 
-    ANIMATION_GROUP_HELPER_PUBLIC_BASE(OpenGL_View);
+    QSequentialAnimationGroup * getSequentialAnimationGroup();
+
+    QParallelAnimationGroup * getParallelAnimationGroup();
+
+    void addAnimation(QAbstractAnimation * animation);
+
+    void removeAnimation(QAbstractAnimation * animation);
+
+    void startAnimation(QAbstractAnimation::DeletionPolicy policy = QAbstractAnimation::DeletionPolicy::KeepWhenStopped);
+
+    void pauseAnimation();
+
+    void stopAnimation();
 
     TimeEngine timeEngine;
 
@@ -86,8 +119,10 @@ public:
 private:
     LayoutParams * layoutParams = nullptr;
 
+    virtual void onPaintGL(QPainter * painter, QOpenGLFramebufferObject * defaultFBO);
 
 public:
+    PixelToNDC pixelToNDC;
     OpenGL_View * parent = nullptr;
     float weight = 0;
 
@@ -131,13 +166,29 @@ public:
     virtual void onAddedToLayout();
     virtual void onRemovedFromLayout();
 
-    virtual void onPaintGL();
-
     virtual bool isLayout() const;
 
-    void setGLViewport(GLint x, GLint y, GLsizei width, GLsizei height);;
+    void setGLViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
-    void setGLViewport(const QRect & widthHeightCoordinates);;
+    void setGLViewport(const QRect & widthHeightCoordinates);
+
+    void createFBO(int w, int h);
+
+    void createFBO(int w, int h, GLenum internalTextureFormat);
+
+    void createFBO(int w, int h, QOpenGLFramebufferObject::Attachment attachment);
+
+    QOpenGLFramebufferObject * fbo = nullptr;
+
+    void createFBO(int w, int h, GLenum internalTextureFormat, QOpenGLFramebufferObject::Attachment attachment);
+
+    void bindFBO();
+
+    void drawFBO(QOpenGLFramebufferObject * defaultFBO);
+
+    void destroyFBO();
+
+    void paintGLToFBO(QOpenGLFramebufferObject * defaultFBO);
 };
 
 #define LAYOUT_PARAMS__MATCH_PARENT(type) new type(OpenGL_View::MATCH_PARENT, OpenGL_View::MATCH_PARENT)

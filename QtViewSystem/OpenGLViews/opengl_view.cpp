@@ -12,6 +12,42 @@ OpenGL_View::~OpenGL_View() {
     delete layoutParams;
 }
 
+void OpenGL_View::setTag(const char *name) {
+    tag = name;
+}
+
+const char * OpenGL_View::getTag() {
+    return tag;
+}
+
+QSequentialAnimationGroup *OpenGL_View::getSequentialAnimationGroup() {
+    return new QSequentialAnimationGroup();
+}
+
+QParallelAnimationGroup *OpenGL_View::getParallelAnimationGroup() {
+    return new QParallelAnimationGroup();
+}
+
+void OpenGL_View::addAnimation(QAbstractAnimation *animation) {
+    animationGroup.addAnimation(animation);
+}
+
+void OpenGL_View::removeAnimation(QAbstractAnimation *animation) {
+    animationGroup.removeAnimation(animation);
+}
+
+void OpenGL_View::startAnimation(QAbstractAnimation::DeletionPolicy policy) {
+    animationGroup.start(policy);
+}
+
+void OpenGL_View::pauseAnimation() {
+    animationGroup.pause();
+}
+
+void OpenGL_View::stopAnimation() {
+    animationGroup.stop();
+}
+
 OpenGL_View::LayoutParams *OpenGL_View::getLayoutParams() const {
     return layoutParams;
 }
@@ -101,7 +137,7 @@ void OpenGL_View::onRemovedFromLayout()
 
 }
 
-void OpenGL_View::onPaintGL() {}
+void OpenGL_View::onPaintGL(QPainter * painter, QOpenGLFramebufferObject * defaultFBO) {}
 
 bool OpenGL_View::isLayout() const {
     return false;
@@ -115,6 +151,188 @@ void OpenGL_View::setGLViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 
 void OpenGL_View::setGLViewport(const QRect &widthHeightCoordinates) {
     setGLViewport(widthHeightCoordinates.x(), widthHeightCoordinates.y(), widthHeightCoordinates.width(), widthHeightCoordinates.height());
+}
+
+void OpenGL_View::createFBO(int w, int h) {
+    createFBO(w, h, GL_RGBA, QOpenGLFramebufferObject::Attachment::CombinedDepthStencil);
+}
+
+void OpenGL_View::createFBO(int w, int h, GLenum internalTextureFormat) {
+    createFBO(w, h, internalTextureFormat, QOpenGLFramebufferObject::Attachment::CombinedDepthStencil);
+}
+
+void OpenGL_View::createFBO(int w, int h, QOpenGLFramebufferObject::Attachment attachment) {
+    createFBO(w, h, GL_RGBA, attachment);
+}
+
+void OpenGL_View::createFBO(int w, int h, GLenum internalTextureFormat, QOpenGLFramebufferObject::Attachment attachment) {
+    auto gl = getOpenGLExtraFunctions();
+    // create framebuffer
+    QOpenGLFramebufferObjectFormat fbo_format;
+    fbo_format.setAttachment(attachment);
+    fbo_format.setInternalTextureFormat(internalTextureFormat);
+
+    destroyFBO();
+
+    fbo = new QOpenGLFramebufferObject(w, h, fbo_format);
+    fbo->bind();
+
+    // configure the texture
+    gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    if(gl->glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        throw new std::runtime_error("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
+    }
+
+    // clear the current FBO to transparent
+    gl->glClearColor(0, 0, 0, 0);
+    gl->glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void OpenGL_View::bindFBO() {
+    fbo->bind();
+}
+
+void OpenGL_View::drawFBO(QOpenGLFramebufferObject *defaultFBO) {
+    fbo->release();
+    if (defaultFBO != nullptr) {
+        defaultFBO->bind();
+    } else {
+        QOpenGLFramebufferObject::bindDefault();
+    }
+
+    auto gl = getOpenGLExtraFunctions();
+    QOpenGLShaderProgram program;
+
+    auto vf = QFile(":/OpenGL Shaders/default_framebuffer_renderer.vsh");
+    vf.open(QFile::OpenModeFlag::ReadOnly);
+
+    auto ff = QFile(":/OpenGL Shaders/default_framebuffer_renderer.fsh");
+    ff.open(QFile::OpenModeFlag::ReadOnly);
+
+    auto v = vf.readAll();
+    auto f = ff.readAll();
+
+    vf.close();
+    ff.close();
+
+    // Any number representing a version of the language a compiler does not support
+    // will cause an error to be generated.
+
+    if (getOpenGLContext()->isOpenGLES()) {
+        // android supports OpenGL ES 3.0 since android 4.3 (kitkat)
+
+        // android supports OpenGL ES 3.1 since android 5.0 (lollipop)
+        //  New functionality in OpenGL ES 3.1 includes:
+        //   Compute shaders
+        //   Independent vertex and fragment shaders
+        //   Indirect draw commands
+
+        // android supports OpenGL ES 3.2 since android 6.0 (marshmellow), possibly 7.0 (naugat)
+
+        // OpenGL ES 3.0 (#version 300 es)
+        // OpenGL ES 3.1 (#version 310 es)
+        // OpenGL ES 3.2 (#version 320 es)
+
+        v.prepend(QByteArrayLiteral("#version 300 es\n"));
+        f.prepend(QByteArrayLiteral("#version 300 es\n"));
+    } else {
+        // OpenGL 3.3 (GLSL #version 330)
+        v.prepend(QByteArrayLiteral("#version 330\n"));
+        f.prepend(QByteArrayLiteral("#version 330\n"));
+    }
+    if (!program.addShaderFromSourceCode(QOpenGLShader::Vertex, v)) {
+        throw new std::runtime_error("OPENGL SHADER VERTEX SHADER COMPILATION FAILED");
+    }
+    if (!program.addShaderFromSourceCode(QOpenGLShader::Fragment, f)) {
+        throw new std::runtime_error("OPENGL SHADER FRAGMENT SHADER COMPILATION FAILED");
+    }
+    if (!program.link()) {
+        throw new std::runtime_error("OPENGL SHADER LINK FAILED");
+    }
+    program.bind();
+
+    int offset_x = absoluteCoordinates.rectTopLeft.x();
+    int offset_y = absoluteCoordinates.rectTopLeft.y();
+    int clip_w = absoluteCoordinates.rectBottomRight.x();
+    int clip_h = absoluteCoordinates.rectBottomRight.y();
+
+    gl->glEnable(GL_SCISSOR_BIT);
+    gl->glScissor(offset_x, offset_y, clip_w, clip_h);
+
+    // draw full screen
+    int w = getWindowWidth();
+    int h = getWindowHeight();
+    int offset_w = w + offset_x;
+    int offset_h = h + offset_y;
+
+    pixelToNDC.resize(w, h);
+
+    auto topLeft = pixelToNDC.toNDC<int, float>(offset_x, offset_y, false);
+    auto topRight = pixelToNDC.toNDC<int, float>(offset_w, offset_y, false);
+    auto bottomRight = pixelToNDC.toNDC<int, float>(offset_x, offset_h, false);
+    auto bottomLeft = pixelToNDC.toNDC<int, float>(offset_w, offset_h, false);
+
+    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+     // positions   // texCoords
+     topLeft.x,     topLeft.y,     0.0f, 1.0f,
+     bottomRight.x, bottomRight.y, 0.0f, 0.0f,
+     bottomLeft.x,  bottomLeft.y,  1.0f, 0.0f,
+
+     topLeft.x,     topLeft.y,     0.0f, 1.0f,
+     bottomLeft.x,  bottomLeft.y,  1.0f, 0.0f,
+     topRight.x,    topRight.y,    1.0f, 1.0f
+   };
+
+    // screen quad VAO
+    unsigned int quadVAO, quadVBO;
+    gl->glGenVertexArrays(1, &quadVAO);
+    gl->glGenBuffers(1, &quadVBO);
+    gl->glBindVertexArray(quadVAO);
+    gl->glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    gl->glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+    gl->glEnableVertexAttribArray(0);
+    gl->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    gl->glEnableVertexAttribArray(1);
+    gl->glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+    gl->glBindVertexArray(quadVAO);
+    gl->glDisable(GL_DEPTH_TEST);
+    gl->glBindTexture(GL_TEXTURE_2D, fbo->texture());
+    gl->glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    gl->glDeleteVertexArrays(1, &quadVAO);
+    gl->glDeleteBuffers(1, &quadVBO);
+
+    program.release();
+}
+
+void OpenGL_View::destroyFBO() {
+    delete fbo;
+    fbo = nullptr;
+}
+
+void OpenGL_View::paintGLToFBO(QOpenGLFramebufferObject *defaultFBO) {
+    // obtain window width and height, these are automatically scaled by the window dpi
+    int w = getWindowWidth();
+    int h = getWindowHeight();
+    createFBO(w, h);
+    bindFBO();
+    // draw to framebuffer
+    auto * gl = getOpenGLExtraFunctions();
+    gl->glEnable(GL_DEPTH_TEST);
+    gl->glEnable(GL_BLEND);
+    gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    auto * painter = paintHolder.begin();
+    onPaintGL(painter, fbo);
+    painter->end();
+
+    gl->glEnable(GL_DEPTH_TEST);
+    gl->glEnable(GL_BLEND);
+    gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    drawFBO(defaultFBO);
+    destroyFBO();
 }
 
 void OpenGL_View::buildCoordinates(const QRect &relativeCoordinates) {

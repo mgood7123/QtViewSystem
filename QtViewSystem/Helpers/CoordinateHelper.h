@@ -15,8 +15,7 @@ public:
         QSize rectSize;
         int rectWidth;
         int rectHeight;
-        QRect clipRect;
-        CoordinateInfo();;
+        CoordinateInfo();
         explicit CoordinateInfo(int x1, int y1, int x2, int y2);;
         CoordinateInfo(const QRect & r);;
     };

@@ -11,18 +11,20 @@ CONFIG += c++11
 SOURCES += \
     Helpers/CoordinateHelper.cpp \
     Helpers/PaintHolderOpenGLHelper.cpp \
+    Helpers/PropertyAnimatorHelper.cpp \
     OpenGLLayouts/opengl_layerlayout.cpp \
     OpenGLLayouts/opengl_layout.cpp \
     OpenGLLayouts/opengl_linearlayout.cpp \
+    OpenGLViews/opengl_colorview.cpp \
     OpenGLViews/opengl_textview.cpp \
     OpenGLViews/opengl_view.cpp \
+    Tools/PixelToNDC.cpp \
     Tools/TimeEngine.cpp \
     Tools/paintholder.cpp \
     main.cpp \
     qtopenglviewsystem.cpp
 
 HEADERS += \
-    Helpers/AnimationGroupHelper.h \
     Helpers/CoordinateHelper.h \
     Helpers/PaintHolderOpenGLHelper.h \
     Helpers/PropertyAnimatorHelper.h \
@@ -30,8 +32,10 @@ HEADERS += \
     OpenGLLayouts/opengl_layerlayout.h \
     OpenGLLayouts/opengl_layout.h \
     OpenGLLayouts/opengl_linearlayout.h \
+    OpenGLViews/opengl_colorview.h \
     OpenGLViews/opengl_textview.h \
     OpenGLViews/opengl_view.h \
+    Tools/PixelToNDC.h \
     Tools/TimeEngine.h \
     Tools/TypeSafeKeyValuePropertyAnimators.h \
     Tools/TypeSafePropertyAnimators.h \

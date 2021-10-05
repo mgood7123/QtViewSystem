@@ -1,5 +1,11 @@
 #include "paintholder.h"
 
+QPainter *PaintHolder::begin() {
+    if (painter == nullptr) return nullptr;
+    painter->begin(paintDevice);
+    return painter;
+}
+
 void PaintHolder::resize(const QSize &size) {
     allocate(size);
 }
@@ -33,7 +39,7 @@ void PaintHolder::allocate(const int &width, const int &height)
         size = s;
         deallocate();
         paintDevice = new QOpenGLPaintDevice(width, height);
-        painter = new QPainter(paintDevice);
+        painter = new QPainter();
         glContext = paintDevice->context();
         glES2Functions = glContext->functions();
         glES3Functions = glContext->extraFunctions();

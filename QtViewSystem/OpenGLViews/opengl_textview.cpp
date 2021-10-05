@@ -51,9 +51,10 @@ OpenGL_TextView::OpenGL_TextView(const QString &text, const QColor &textColor) :
 
 OpenGL_TextView::OpenGL_TextView(const QString &text, const int &textSize, const QColor &textColor) : text(text), textSize(textSize), textColor(textColor) {}
 
-void OpenGL_TextView::onPaintGL()
+void OpenGL_TextView::onPaintGL(QPainter * painter, QOpenGLFramebufferObject * defaultFBO)
 {
-    auto * painter = paintHolder.painter;
+    auto * gl = getOpenGLExtraFunctions();
+
     QFont f = painter->font();
     f.setPixelSize(textSize);
     painter->setFont(f);

@@ -13,6 +13,5 @@ CoordinateHelper::CoordinateInfo::CoordinateInfo(const QRect &r):
     rectBottomRight(QPoint{r.width(), r.height()}),
     rectSize(QSize{rectBottomRight.x() - rectTopLeft.x(), rectBottomRight.y() - rectTopLeft.y()}),
     rectWidth(rectSize.width()),
-    rectHeight(rectSize.height()),
-    clipRect(QRect{0, 0, rectSize.width(), rectSize.height()})
+    rectHeight(rectSize.height())
 {}
