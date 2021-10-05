@@ -5,7 +5,7 @@
 
 class OpenGL_TextView : public OpenGL_View
 {
-private:
+protected:
     QString text;
     int textSize;
     QColor textColor;
@@ -20,22 +20,18 @@ public:
     OpenGL_TextView(const QString &text, const QColor &textColor);
     OpenGL_TextView(const QString &text, const int &textSize, const QColor &textColor);
 
+    const QString &getText() const;
+    void setText(const QString &newText);
+
+    int getTextSize() const;
+    void setTextSize(int newTextSize);
+
+    const QColor &getTextColor() const;
+    void setTextColor(const QColor &newTextColor);
+
     // OpenGLView interface
 private:
     virtual void onPaintGL(QPainter * painter, QOpenGLFramebufferObject * defaultFBO) override;
-public:
-
-    const QString &getText() const;
-    OpenGL_TextView * setText(const QString &newText);
-    int getTextSize() const;
-    OpenGL_TextView * setTextSize(int newTextSize);
-    const QColor &getTextColor() const;
-    OpenGL_TextView * setTextColor(const QColor &newTextColor);
-
-    // OpenGL_View interface
-public:
-    virtual void onAddedToLayout() override;
-    virtual void onRemovedFromLayout() override;
 };
 
 #endif // OPENGL_TEXTVIEW_H

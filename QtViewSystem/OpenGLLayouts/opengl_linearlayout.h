@@ -12,9 +12,10 @@ public:
 private:
     Orientation orientation = Vertical;
 public:
-
-    class LinearLayoutParams : public LayoutParams {
+    class LinearLayoutParams : public OpenGL_View::LayoutParams {
     public:
+        // constructors
+        using OpenGL_View::LayoutParams::LayoutParams;
         float weight = 1;
     };
 

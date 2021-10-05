@@ -15,9 +15,11 @@ SOURCES += \
     OpenGLLayouts/opengl_layerlayout.cpp \
     OpenGLLayouts/opengl_layout.cpp \
     OpenGLLayouts/opengl_linearlayout.cpp \
+    OpenGLViews/opengl_buttonview.cpp \
     OpenGLViews/opengl_colorview.cpp \
     OpenGLViews/opengl_textview.cpp \
     OpenGLViews/opengl_view.cpp \
+    QtViewSystemManual/QtViewSystemManualView.cpp \
     Tools/PixelToNDC.cpp \
     Tools/TimeEngine.cpp \
     Tools/paintholder.cpp \
@@ -32,9 +34,11 @@ HEADERS += \
     OpenGLLayouts/opengl_layerlayout.h \
     OpenGLLayouts/opengl_layout.h \
     OpenGLLayouts/opengl_linearlayout.h \
+    OpenGLViews/opengl_buttonview.h \
     OpenGLViews/opengl_colorview.h \
     OpenGLViews/opengl_textview.h \
     OpenGLViews/opengl_view.h \
+    QtViewSystemManual/QtViewSystemManualView.h \
     Tools/PixelToNDC.h \
     Tools/TimeEngine.h \
     Tools/TypeSafeKeyValuePropertyAnimators.h \
@@ -51,11 +55,6 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 DISTFILES += \
     OpenGL Shaders/default_framebuffer_renderer.fsh \
     OpenGL Shaders/default_framebuffer_renderer.vsh \
-    OpenGL Shaders/example_fragment_desktop.frag \
-    OpenGL Shaders/example_fragment_es2.fsh \
-    OpenGL Shaders/example_vertex_desktop.vsh \
-    OpenGL Shaders/example_vertex_es2.vsh \
-    OpenGL Shaders/s.frag \
     android/AndroidManifest.xml \
     android/build.gradle \
     android/gradle.properties \
@@ -65,10 +64,25 @@ DISTFILES += \
     android/gradlew.bat \
     android/res/values/libs.xml
 
+RESOURCES += \
+    Resource_Files.qrc
+
 contains(ANDROID_TARGET_ARCH,arm64-v8a) {
     ANDROID_PACKAGE_SOURCE_DIR = \
         $$PWD/android
 }
 
-RESOURCES += \
-    Resource_Files.qrc
+contains(ANDROID_TARGET_ARCH,armeabi-v7a) {
+    ANDROID_PACKAGE_SOURCE_DIR = \
+        $$PWD/android
+}
+
+contains(ANDROID_TARGET_ARCH,x86_64) {
+    ANDROID_PACKAGE_SOURCE_DIR = \
+        $$PWD/android
+}
+
+contains(ANDROID_TARGET_ARCH,x86) {
+    ANDROID_PACKAGE_SOURCE_DIR = \
+        $$PWD/android
+}

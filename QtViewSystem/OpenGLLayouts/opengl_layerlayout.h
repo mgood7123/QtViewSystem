@@ -10,7 +10,6 @@ public:
     // OpenGL_View interface
 public:
     virtual void onMeasure(int width, int height) override;
-    virtual void onResizeGL(int window_w, int window_h) override;
 };
 
 #endif // OPENGL_LAYERLAYOUT_H

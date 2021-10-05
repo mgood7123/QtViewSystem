@@ -4,11 +4,11 @@
 #include <QOpenGLPaintDevice>
 #include <QPainter>
 
-
 class PaintHolder {
-    QSize size;
+    QSize size = {-1, -1};
 
 public:
+
     QOpenGLPaintDevice * paintDevice = nullptr;
     QPainter * painter = nullptr;
 

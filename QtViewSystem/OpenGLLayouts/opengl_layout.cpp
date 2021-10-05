@@ -74,7 +74,7 @@ void OpenGL_Layout::removeAllChildren() {
 
 void OpenGL_Layout::onResizeGL(int window_w, int window_h)
 {
-    paintHolder.resize(window_w, window_h);
+    OpenGL_View::onResizeGL(window_w, window_h);
     for (OpenGL_View * view: children) {
         view->onResizeGL(window_w, window_h);
     }

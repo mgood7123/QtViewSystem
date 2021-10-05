@@ -13,6 +13,7 @@ QtOpenGLViewSystem::QtOpenGLViewSystem(QOpenGLWindow::UpdateBehavior updateBehav
     fmt.setRedBufferSize(8);
     fmt.setGreenBufferSize(8);
     fmt.setAlphaBufferSize(8);
+    fmt.setSamples(8);
 
     // Request OpenGL 3.3 core or OpenGL ES 3.2
     if (QOpenGLContext::openGLModuleType() == QOpenGLContext::LibGL) {
@@ -35,7 +36,7 @@ QtOpenGLViewSystem::~QtOpenGLViewSystem()
 
 void QtOpenGLViewSystem::setContentView(OpenGL_View *view) {
     OpenGL_View::LayoutParams * l = view->getLayoutParams();
-    setContentView(view,  l != nullptr ? l : LAYOUT_PARAMS__MATCH_PARENT(OpenGL_View::LayoutParams));
+    setContentView(view,  l != nullptr ? l : makeLayoutParams_MATCH_PARENT<OpenGL_View::LayoutParams>());
 }
 
 void QtOpenGLViewSystem::setContentView(OpenGL_View *view, OpenGL_View::LayoutParams * params) {

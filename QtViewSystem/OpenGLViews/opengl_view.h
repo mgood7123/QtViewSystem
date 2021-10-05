@@ -35,6 +35,7 @@
 #include <Tools/PixelToNDC.h>
 #include <Tools/TimeEngine.h>
 #include <Tools/paintholder.h>
+#include <QPainterPath>
 
 class OpenGL_View :
         public CoordinateHelper,
@@ -179,6 +180,7 @@ public:
     void createFBO(int w, int h, QOpenGLFramebufferObject::Attachment attachment);
 
     QOpenGLFramebufferObject * fbo = nullptr;
+    QOpenGLFramebufferObject * fboAA = nullptr;
 
     void createFBO(int w, int h, GLenum internalTextureFormat, QOpenGLFramebufferObject::Attachment attachment);
 
@@ -191,9 +193,24 @@ public:
     void paintGLToFBO(QOpenGLFramebufferObject * defaultFBO);
 };
 
-#define LAYOUT_PARAMS__MATCH_PARENT(type) new type(OpenGL_View::MATCH_PARENT, OpenGL_View::MATCH_PARENT)
-#define LAYOUT_PARAMS__WRAP_CONTENT(type) new type(OpenGL_View::WRAP_CONTENT, OpenGL_View::WRAP_CONTENT)
-#define LAYOUT_PARAMS__MATCH_PARENT_WRAP_CONTENT(type) new type(OpenGL_View::MATCH_PARENT, OpenGL_View::WRAP_CONTENT)
-#define LAYOUT_PARAMS__WRAP_CONTENT_MATCH_PARENT(type) new type(OpenGL_View::WRAP_CONTENT, OpenGL_View::MATCH_PARENT)
+template<typename T>
+T * makeLayoutParams_MATCH_PARENT() {
+    return new T(OpenGL_View::MATCH_PARENT, OpenGL_View::MATCH_PARENT);
+}
+
+template<typename T>
+T * makeLayoutParams_WRAP_CONTENT() {
+    return new T(OpenGL_View::WRAP_CONTENT, OpenGL_View::WRAP_CONTENT);
+}
+
+template<typename T>
+T * makeLayoutParams_MATCH_PARENT_WRAP_CONTENT() {
+    return new T(OpenGL_View::MATCH_PARENT, OpenGL_View::WRAP_CONTENT);
+}
+
+template<typename T>
+T * makeLayoutParams_WRAP_CONTENT_MATCH_PARENT() {
+    return new T(OpenGL_View::WRAP_CONTENT, OpenGL_View::MATCH_PARENT);
+}
 
 #endif // OPENGL_VIEW_H

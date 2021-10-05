@@ -68,9 +68,17 @@ PaintHolder &PaintHolder::operator=(const PaintHolder &other) {
 }
 
 PaintHolder::PaintHolder(PaintHolder &&other) {
-    deallocate();
     size = other.size;
     other.size = {0, 0};
+
+    glES3Functions = other.glES3Functions;
+    other.glES3Functions = nullptr;
+
+    glES2Functions = other.glES2Functions;
+    other.glES2Functions = nullptr;
+
+    glContext = other.glContext;
+    other.glContext = nullptr;
 
     paintDevice = other.paintDevice;
     other.paintDevice = nullptr;
@@ -83,6 +91,15 @@ PaintHolder &PaintHolder::operator=(PaintHolder &&other) {
     deallocate();
     size = other.size;
     other.size = {0, 0};
+
+    glES3Functions = other.glES3Functions;
+    other.glES3Functions = nullptr;
+
+    glES2Functions = other.glES2Functions;
+    other.glES2Functions = nullptr;
+
+    glContext = other.glContext;
+    other.glContext = nullptr;
 
     paintDevice = other.paintDevice;
     other.paintDevice = nullptr;

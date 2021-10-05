@@ -1,16 +1,13 @@
 #include "opengl_textview.h"
 
-#include <QTimer>
-
 const QString &OpenGL_TextView::getText() const
 {
     return text;
 }
 
-OpenGL_TextView * OpenGL_TextView::setText(const QString &newText)
+void OpenGL_TextView::setText(const QString &newText)
 {
     text = newText;
-    return this;
 }
 
 int OpenGL_TextView::getTextSize() const
@@ -18,10 +15,9 @@ int OpenGL_TextView::getTextSize() const
     return textSize;
 }
 
-OpenGL_TextView * OpenGL_TextView::setTextSize(int newTextSize)
+void OpenGL_TextView::setTextSize(int newTextSize)
 {
     textSize = newTextSize;
-    return this;
 }
 
 const QColor &OpenGL_TextView::getTextColor() const
@@ -29,10 +25,9 @@ const QColor &OpenGL_TextView::getTextColor() const
     return textColor;
 }
 
-OpenGL_TextView * OpenGL_TextView::setTextColor(const QColor &newTextColor)
+void OpenGL_TextView::setTextColor(const QColor &newTextColor)
 {
     textColor = newTextColor;
-    return this;
 }
 
 OpenGL_TextView::OpenGL_TextView() : OpenGL_TextView(13) {}
@@ -53,25 +48,24 @@ OpenGL_TextView::OpenGL_TextView(const QString &text, const int &textSize, const
 
 void OpenGL_TextView::onPaintGL(QPainter * painter, QOpenGLFramebufferObject * defaultFBO)
 {
-    auto * gl = getOpenGLExtraFunctions();
-
     QFont f = painter->font();
     f.setPixelSize(textSize);
     painter->setFont(f);
     painter->setPen(textColor);
-    painter->drawText(painter->window(), text);
-}
 
-void OpenGL_TextView::onAddedToLayout()
-{
-    // 120.000048 fps
-    timeEngine.physicsTimeStep = 0.01666666/2;
-    timeEngine.physicsCallback = [&](const TimeEngine & timeEngine_) {
-    };
-    startAnimation();
-}
-
-void OpenGL_TextView::onRemovedFromLayout()
-{
-    stopAnimation();
+    auto * l = getLayoutParams();
+    Qt::AlignmentFlag alignment;
+    switch (l->gravity) {
+        case OpenGL_View::LayoutParams::GRAVITY_NONE:
+        case OpenGL_View::LayoutParams::GRAVITY_LEFT:
+            alignment = Qt::AlignmentFlag::AlignLeft;
+            break;
+        case OpenGL_View::LayoutParams::GRAVITY_CENTER:
+            alignment = Qt::AlignmentFlag::AlignCenter;
+            break;
+        case OpenGL_View::LayoutParams::GRAVITY_RIGHT:
+            alignment = Qt::AlignmentFlag::AlignRight;
+            break;
+    }
+    painter->drawText(painter->window(), Qt::TextWordWrap | alignment, text);
 }

@@ -10,6 +10,7 @@ OpenGL_View::OpenGL_View() {}
 
 OpenGL_View::~OpenGL_View() {
     delete layoutParams;
+    destroyFBO();
 }
 
 void OpenGL_View::setTag(const char *name) {
@@ -125,16 +126,17 @@ void OpenGL_View::onResizeGL(QSize window_size) {
 
 void OpenGL_View::onResizeGL(int window_w, int window_h) {
     paintHolder.resize(window_w, window_h);
+    createFBO(window_w, window_h);
 }
 
 void OpenGL_View::onAddedToLayout()
 {
-
+    startAnimation();
 }
 
 void OpenGL_View::onRemovedFromLayout()
 {
-
+    stopAnimation();
 }
 
 void OpenGL_View::onPaintGL(QPainter * painter, QOpenGLFramebufferObject * defaultFBO) {}
@@ -166,15 +168,34 @@ void OpenGL_View::createFBO(int w, int h, QOpenGLFramebufferObject::Attachment a
 }
 
 void OpenGL_View::createFBO(int w, int h, GLenum internalTextureFormat, QOpenGLFramebufferObject::Attachment attachment) {
+    destroyFBO();
+
     auto gl = getOpenGLExtraFunctions();
+    if (gl == nullptr) return;
+
     // create framebuffer
+
+    QOpenGLFramebufferObjectFormat muliSampleFormat;
+    muliSampleFormat.setAttachment(attachment);
+    muliSampleFormat.setSamples(8);
+    // a renderbuffer will be created
+    fboAA = new QOpenGLFramebufferObject(w, h, muliSampleFormat);
+
+    fboAA->bind();
+    if(gl->glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        throw new std::runtime_error("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
+    }
+
+    // clear the current FBO to transparent
+    gl->glClearColor(0, 0, 0, 0);
+    gl->glClear(GL_COLOR_BUFFER_BIT);
+
     QOpenGLFramebufferObjectFormat fbo_format;
     fbo_format.setAttachment(attachment);
     fbo_format.setInternalTextureFormat(internalTextureFormat);
 
-    destroyFBO();
-
     fbo = new QOpenGLFramebufferObject(w, h, fbo_format);
+
     fbo->bind();
 
     // configure the texture
@@ -183,23 +204,28 @@ void OpenGL_View::createFBO(int w, int h, GLenum internalTextureFormat, QOpenGLF
     if(gl->glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         throw new std::runtime_error("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
     }
-
-    // clear the current FBO to transparent
-    gl->glClearColor(0, 0, 0, 0);
-    gl->glClear(GL_COLOR_BUFFER_BIT);
+    // dont clear as we copy fboAA directly to this
+    fbo->release();
+    fboAA->bind();
 }
 
 void OpenGL_View::bindFBO() {
-    fbo->bind();
+    fboAA->bind();
 }
 
 void OpenGL_View::drawFBO(QOpenGLFramebufferObject *defaultFBO) {
-    fbo->release();
+    fboAA->release();
     if (defaultFBO != nullptr) {
         defaultFBO->bind();
     } else {
         QOpenGLFramebufferObject::bindDefault();
     }
+
+    int w = getWindowWidth();
+    int h = getWindowHeight();
+
+    // blit fboAA to fbo
+    QOpenGLFramebufferObject::blitFramebuffer(fbo, fboAA, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 
     auto gl = getOpenGLExtraFunctions();
     QOpenGLShaderProgram program;
@@ -261,8 +287,6 @@ void OpenGL_View::drawFBO(QOpenGLFramebufferObject *defaultFBO) {
     gl->glScissor(offset_x, offset_y, clip_w, clip_h);
 
     // draw full screen
-    int w = getWindowWidth();
-    int h = getWindowHeight();
     int offset_w = w + offset_x;
     int offset_h = h + offset_y;
 
@@ -308,31 +332,34 @@ void OpenGL_View::drawFBO(QOpenGLFramebufferObject *defaultFBO) {
 }
 
 void OpenGL_View::destroyFBO() {
+    if (fboAA != nullptr) fboAA->release();
+    delete fboAA;
+    fboAA = nullptr;
+    if (fbo != nullptr) fbo->release();
     delete fbo;
     fbo = nullptr;
 }
 
 void OpenGL_View::paintGLToFBO(QOpenGLFramebufferObject *defaultFBO) {
-    // obtain window width and height, these are automatically scaled by the window dpi
-    int w = getWindowWidth();
-    int h = getWindowHeight();
-    createFBO(w, h);
     bindFBO();
     // draw to framebuffer
     auto * gl = getOpenGLExtraFunctions();
+    // clear the current FBO to transparent
+    gl->glClearColor(0, 0, 0, 0);
+    gl->glClear(GL_COLOR_BUFFER_BIT);
+
     gl->glEnable(GL_DEPTH_TEST);
     gl->glEnable(GL_BLEND);
     gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     auto * painter = paintHolder.begin();
-    onPaintGL(painter, fbo);
+    onPaintGL(painter, fboAA);
     painter->end();
 
     gl->glEnable(GL_DEPTH_TEST);
     gl->glEnable(GL_BLEND);
     gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     drawFBO(defaultFBO);
-    destroyFBO();
 }
 
 void OpenGL_View::buildCoordinates(const QRect &relativeCoordinates) {
