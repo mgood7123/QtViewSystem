@@ -184,16 +184,10 @@ public:
 
     void createFBO(int w, int h);
 
-    void createFBO(int w, int h, GLenum internalTextureFormat);
-
-    void createFBO(int w, int h, QOpenGLFramebufferObject::Attachment attachment);
-
     GLuint fbo, fbo_color_texture, fbo_depth_renderbuffer;
     GLuint fboMSAA, fboMSAA_depth_renderbuffer;
     QOpenGLTexture fboMSAA_color_texture = QOpenGLTexture(QOpenGLTexture::Target2DMultisample);
     bool fboMSAA_color_texture_configured = false;
-
-    void createFBO(int w, int h, GLenum internalTextureFormat, QOpenGLFramebufferObject::Attachment attachment);
 
     void bindFBO();
 

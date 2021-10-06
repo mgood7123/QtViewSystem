@@ -241,18 +241,6 @@ void OpenGL_View::check_glCheckFramebufferStatus(QOpenGLExtraFunctions *gl, GLen
 }
 
 void OpenGL_View::createFBO(int w, int h) {
-    createFBO(w, h, QOpenGLFramebufferObject::Attachment::CombinedDepthStencil);
-}
-
-void OpenGL_View::createFBO(int w, int h, GLenum internalTextureFormat) {
-    createFBO(w, h, internalTextureFormat, QOpenGLFramebufferObject::Attachment::CombinedDepthStencil);
-}
-
-void OpenGL_View::createFBO(int w, int h, QOpenGLFramebufferObject::Attachment attachment) {
-    createFBO(w, h, GL_RGBA8, attachment);
-}
-
-void OpenGL_View::createFBO(int w, int h, GLenum internalTextureFormat, QOpenGLFramebufferObject::Attachment attachment) {
     destroyFBO();
 
     auto gl = getOpenGLExtraFunctions();
@@ -262,7 +250,11 @@ void OpenGL_View::createFBO(int w, int h, GLenum internalTextureFormat, QOpenGLF
     // color
     gl->glGenTextures(1, &fbo_color_texture);
     gl->glBindTexture(GL_TEXTURE_2D, fbo_color_texture);
-    gl->glTexStorage2D(GL_TEXTURE_2D, 1, internalTextureFormat, w, h);
+    // multisample texture requires power of 2
+    // however making the texture larger than the screen shrinks the contents that is drawn
+    // effectively reducing the texture to a *power of 2* grid with everything else drawn as garbage data
+    // similar to split/quad screen with the bottom left being texture and everything else garbage
+    gl->glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, w, h);
 
     // depth
     gl->glGenRenderbuffers(1, &fbo_depth_renderbuffer);
@@ -277,10 +269,13 @@ void OpenGL_View::createFBO(int w, int h, GLenum internalTextureFormat, QOpenGLF
     check_glCheckFramebufferStatus(gl, GL_FRAMEBUFFER);
 
     // color
+    // we use QOpenGLTexture here because for some reason
+    // gl->glTexStorage2DMultisample is unresolved and points to address 0x0
     fboMSAA_color_texture.create();
     fboMSAA_color_texture.setFormat(QOpenGLTexture::TextureFormat::RGBA8_UNorm);
     fboMSAA_color_texture.setSamples(8);
     fboMSAA_color_texture.setFixedSamplePositions(true);
+    // multisample texture requires power of 2
     int pow2_w = isPowerOf2(w) ? w : qNextPowerOfTwo(w);
     int pow2_h = isPowerOf2(h) ? h : qNextPowerOfTwo(h);
     fboMSAA_color_texture.setSize(pow2_w, pow2_h);
