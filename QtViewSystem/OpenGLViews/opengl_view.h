@@ -20,6 +20,7 @@
 #include <QOpenGLTimeMonitor>
 #include <QOpenGLShader>
 #include <QOpenGLShaderProgram>
+#include <QOpenGLTexture>
 
 
 #include <qtopenglviewsystemwindowdata.h>
@@ -120,7 +121,7 @@ public:
 private:
     LayoutParams * layoutParams = nullptr;
 
-    virtual void onPaintGL(QPainter * painter, QOpenGLFramebufferObject * defaultFBO);
+    virtual void onPaintGL(QPainter * painter, GLuint * defaultFBO);
 
 public:
     PixelToNDC pixelToNDC;
@@ -173,24 +174,34 @@ public:
 
     void setGLViewport(const QRect & widthHeightCoordinates);
 
+    template<typename T> bool isPowerOf2(T const x) { return x && !( x & (x - 1) ); };
+
+    void check_glError(QOpenGLExtraFunctions * gl, const char * tag = nullptr);
+
+    void check_glError(GLenum error, const char * tag = nullptr);
+
+    void check_glCheckFramebufferStatus(QOpenGLExtraFunctions * gl, GLenum target, const char * tag = nullptr);
+
     void createFBO(int w, int h);
 
     void createFBO(int w, int h, GLenum internalTextureFormat);
 
     void createFBO(int w, int h, QOpenGLFramebufferObject::Attachment attachment);
 
-    QOpenGLFramebufferObject * fbo = nullptr;
-    QOpenGLFramebufferObject * fboAA = nullptr;
+    GLuint fbo, fbo_color_texture, fbo_depth_renderbuffer;
+    GLuint fboMSAA, fboMSAA_depth_renderbuffer;
+    QOpenGLTexture fboMSAA_color_texture = QOpenGLTexture(QOpenGLTexture::Target2DMultisample);
+    bool fboMSAA_color_texture_configured = false;
 
     void createFBO(int w, int h, GLenum internalTextureFormat, QOpenGLFramebufferObject::Attachment attachment);
 
     void bindFBO();
 
-    void drawFBO(QOpenGLFramebufferObject * defaultFBO);
+    void drawFBO(GLuint * defaultFBO);
 
     void destroyFBO();
 
-    void paintGLToFBO(QOpenGLFramebufferObject * defaultFBO);
+    void paintGLToFBO(GLuint * defaultFBO);
 };
 
 template<typename T>

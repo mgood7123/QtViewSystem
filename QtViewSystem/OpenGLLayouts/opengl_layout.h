@@ -21,7 +21,7 @@ public:
 
     // OpenGLView interface
 private:
-    virtual void onPaintGL(QPainter * painter, QOpenGLFramebufferObject * defaultFBO) override;
+    virtual void onPaintGL(QPainter * painter, GLuint * defaultFBO) override;
 public:
     virtual void onResizeGL(int window_w, int window_h) override;
     virtual bool isLayout() const override final;

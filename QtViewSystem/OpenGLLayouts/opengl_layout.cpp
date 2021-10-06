@@ -80,7 +80,7 @@ void OpenGL_Layout::onResizeGL(int window_w, int window_h)
     }
 }
 
-void OpenGL_Layout::onPaintGL(QPainter * painter, QOpenGLFramebufferObject * defaultFBO)
+void OpenGL_Layout::onPaintGL(QPainter * painter, GLuint * defaultFBO)
 {
     for (OpenGL_View * view: children) {
         view->paintGLToFBO(defaultFBO);

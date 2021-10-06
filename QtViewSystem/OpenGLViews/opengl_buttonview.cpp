@@ -46,7 +46,7 @@ OpenGL_ButtonView::OpenGL_ButtonView(const QString &text, const QColor &textColo
 
 OpenGL_ButtonView::OpenGL_ButtonView(const QString &text, const int &textSize, const QColor &textColor) : text(text), textSize(textSize), textColor(textColor) {}
 
-void OpenGL_ButtonView::onPaintGL(QPainter *painter, QOpenGLFramebufferObject *defaultFBO)
+void OpenGL_ButtonView::onPaintGL(QPainter *painter, GLuint *defaultFBO)
 {
     float radius = 10;
     float a = radius/2;
