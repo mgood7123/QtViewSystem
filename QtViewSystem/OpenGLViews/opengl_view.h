@@ -195,14 +195,6 @@ public:
 
     QImage createQImage(Qt::GlobalColor color);
 
-    int applyDpiScale(qreal value) const;
-
-    int applyDpiScale(int value) const;
-
-    qreal applyDpiScaleF(qreal value) const;
-
-    qreal applyDpiScaleF(int value) const;
-
     bool generated = false;
 
     GLuint quadVAO, quadVBO;

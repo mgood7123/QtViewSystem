@@ -333,26 +333,6 @@ QImage OpenGL_View::createQImage(Qt::GlobalColor color) {
     return image;
 }
 
-int OpenGL_View::applyDpiScale(qreal value) const {
-    if (windowData == nullptr) qFatal("cannot apply dpi scale with no window data");
-    return windowData->applyDpiScale(value);
-}
-
-int OpenGL_View::applyDpiScale(int value) const {
-    if (windowData == nullptr) qFatal("cannot apply dpi scale with no window data");
-    return windowData->applyDpiScale(value);
-}
-
-qreal OpenGL_View::applyDpiScaleF(qreal value) const {
-    if (windowData == nullptr) qFatal("cannot apply dpi scale with no window data");
-    return windowData->applyDpiScale(value);
-}
-
-qreal OpenGL_View::applyDpiScaleF(int value) const {
-    if (windowData == nullptr) qFatal("cannot apply dpi scale with no window data");
-    return windowData->applyDpiScale(value);
-}
-
 void OpenGL_View::bindFBO() {
     auto gl = getOpenGLExtraFunctions();
     gl->glBindFramebuffer(GL_FRAMEBUFFER, fbo);

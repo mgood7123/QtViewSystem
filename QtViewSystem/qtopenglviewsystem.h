@@ -22,11 +22,11 @@ class QtOpenGLViewSystem : public QOpenGLWindow
 {
     Q_OBJECT
     QTimer timer;
+    QTOpenGLViewSystemWindowData * windowData = nullptr;
     OpenGL_View * contentView = nullptr;
     QOpenGLDebugLogger *logger = nullptr;
     void handleLoggedMessage(const QOpenGLDebugMessage& debugMessage);
 public:
-    QScopedPointer<QTOpenGLViewSystemWindowData> windowData;
     QtOpenGLViewSystem(UpdateBehavior updateBehavior = NoPartialUpdate);
 
     ~QtOpenGLViewSystem();

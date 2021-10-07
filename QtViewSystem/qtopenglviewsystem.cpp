@@ -2,7 +2,7 @@
 
 QtOpenGLViewSystem::QtOpenGLViewSystem(QOpenGLWindow::UpdateBehavior updateBehavior) : QOpenGLWindow(updateBehavior)
 {
-    windowData.reset(new QTOpenGLViewSystemWindowData());
+    windowData = new QTOpenGLViewSystemWindowData();
     windowData->window = this;
     windowData->screen = screen();
     windowData->dpiScale = devicePixelRatio();
@@ -36,6 +36,7 @@ QtOpenGLViewSystem::~QtOpenGLViewSystem()
     makeCurrent();
     delete contentView;
     delete logger;
+    delete windowData;
 }
 
 void QtOpenGLViewSystem::setContentView(OpenGL_View *view) {
@@ -51,9 +52,9 @@ void QtOpenGLViewSystem::setContentView(OpenGL_View *view, OpenGL_View::LayoutPa
     contentView = view;
     if (contentView != nullptr) {
         contentView->setLayoutParams(params);
-        contentView->windowData = windowData.data();
-        int w = windowData->applyDpiScale(width());
-        int h = windowData->applyDpiScale(height());
+        contentView->setWindowData(windowData);
+        int w = contentView->applyDpiScale(width());
+        int h = contentView->applyDpiScale(height());
         contentView->onResizeGL(w, h);
         contentView->onAddedToLayout();
     }

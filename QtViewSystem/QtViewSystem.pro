@@ -12,6 +12,7 @@ SOURCES += \
     Helpers/CoordinateHelper.cpp \
     Helpers/PaintHolderOpenGLHelper.cpp \
     Helpers/PropertyAnimatorHelper.cpp \
+    Helpers/WindowDataHelper.cpp \
     OpenGLLayouts/opengl_layerlayout.cpp \
     OpenGLLayouts/opengl_layout.cpp \
     OpenGLLayouts/opengl_linearlayout.cpp \

@@ -21,7 +21,7 @@ void OpenGL_Layout::addChild(OpenGL_View *view, LayoutParams * params) {
         qFatal("cannot assign a nullptr LayoutParams");
     }
     view->setLayoutParams(params);
-    view->windowData = windowData;
+    view->setWindowData(getWindowData());
     view->parent = this;
     view->onResizeGL(getWindowSize());
     children.append(view);
@@ -41,7 +41,7 @@ void OpenGL_Layout::detachChild(OpenGL_View *view) {
             break;
         }
     }
-    view->windowData = nullptr;
+    view->setWindowData(nullptr);
 }
 
 void OpenGL_Layout::removeChild(OpenGL_View *view) {
@@ -84,5 +84,13 @@ void OpenGL_Layout::onPaintGL(QPainter * painter, GLuint * defaultFBO)
 {
     for (OpenGL_View * view: children) {
         view->paintGLToFBO(defaultFBO);
+    }
+}
+
+void OpenGL_Layout::setWindowData(const QTOpenGLViewSystemWindowData *windowData)
+{
+    WindowDataHelper::setWindowData(windowData);
+    for (OpenGL_View * view: children) {
+        view->setWindowData(windowData);
     }
 }
