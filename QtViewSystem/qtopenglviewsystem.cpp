@@ -15,15 +15,18 @@ QtOpenGLViewSystem::QtOpenGLViewSystem(QOpenGLWindow::UpdateBehavior updateBehav
     fmt.setAlphaBufferSize(8);
     fmt.setSamples(8);
 
-    // Request OpenGL 3.3 core or OpenGL ES 3.2
+    // Request OpenGL 4.3 core or OpenGL ES 3.2
     if (QOpenGLContext::openGLModuleType() == QOpenGLContext::LibGL) {
-        qDebug("Requesting 3.3 core context");
-        fmt.setVersion(3, 3);
+        qDebug("Requesting 4.3 core context");
+        fmt.setVersion(4, 3);
         fmt.setProfile(QSurfaceFormat::CoreProfile);
     } else {
         qDebug("Requesting 3.2 context");
         fmt.setVersion(3, 2);
     }
+
+    // request debug context
+    fmt.setOption(QSurfaceFormat::DebugContext);
 
     setFormat(fmt);
 }
@@ -32,6 +35,7 @@ QtOpenGLViewSystem::~QtOpenGLViewSystem()
 {
     makeCurrent();
     delete contentView;
+    delete logger;
 }
 
 void QtOpenGLViewSystem::setContentView(OpenGL_View *view) {
@@ -55,12 +59,28 @@ void QtOpenGLViewSystem::setContentView(OpenGL_View *view, OpenGL_View::LayoutPa
     }
 }
 
+void QtOpenGLViewSystem::handleLoggedMessage(const QOpenGLDebugMessage& debugMessage) {
+    qDebug() << debugMessage;
+}
+
 void QtOpenGLViewSystem::initializeGL()
 {
     qDebug() << "Vendor graphic card:" << (const char *) glGetString(GL_VENDOR);
     qDebug() << "Renderer:" << (const char *) glGetString(GL_RENDERER);
     qDebug() << "Version GL:" << (const char *) glGetString(GL_VERSION);
     qDebug() << "Version GLSL:" << (const char *) glGetString(GL_SHADING_LANGUAGE_VERSION);
+
+    if (context()->hasExtension("GL_KHR_debug")) {
+        logger = new QOpenGLDebugLogger(this);
+        connect(logger, &QOpenGLDebugLogger::messageLogged, this, &QtOpenGLViewSystem::handleLoggedMessage, Qt::DirectConnection);
+        if (logger->initialize()) {
+            logger->startLogging(QOpenGLDebugLogger::SynchronousLogging);
+        } else {
+            qWarning("OpenGL context supports GL_KHR_debug extension but initialization of QOpenGLDebugLogger has failed");
+        }
+    } else {
+        qWarning("OpenGL context does not support GL_KHR_debug extension");
+    }
 
     timer.setTimerType(Qt::PreciseTimer);
     timer.connect(&timer, SIGNAL(timeout()), this, SLOT(update()));

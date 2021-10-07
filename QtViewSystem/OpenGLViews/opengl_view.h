@@ -184,10 +184,12 @@ public:
 
     void createFBO(int w, int h);
 
-    GLuint fbo, fbo_color_texture, fbo_depth_renderbuffer;
-    GLuint fboMSAA, fboMSAA_depth_renderbuffer;
+    bool generated = false;
+
+    GLuint quadVAO, quadVBO;
+    GLuint fbo = 0, fbo_color_texture = 0, fbo_depth_renderbuffer = 0;
+    GLuint fboMSAA = 0, fboMSAA_depth_renderbuffer = 0;
     QOpenGLTexture fboMSAA_color_texture = QOpenGLTexture(QOpenGLTexture::Target2DMultisample);
-    bool fboMSAA_color_texture_configured = false;
 
     void bindFBO();
 

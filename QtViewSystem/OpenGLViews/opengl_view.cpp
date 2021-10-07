@@ -186,6 +186,17 @@ void OpenGL_View::check_glError(GLenum error, const char * tag) {
             QTVSGLE(GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE);
             QTVSGLE(GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS);
             QTVSGLE(GL_FRAMEBUFFER_UNDEFINED);
+            default: {
+                QString msg = "ERROR: ";
+                if (tag != nullptr) {
+                    msg += "(TAG: ";
+                    msg += tag;
+                    msg += ") ";
+                }
+                msg += QString::number(error);
+                std::string stdmsg = msg.toStdString();
+                qFatal("%s", stdmsg.c_str());
+            }
         }
 #undef QTVSGLE
     }
@@ -211,29 +222,32 @@ void OpenGL_View::check_glCheckFramebufferStatus(QOpenGLExtraFunctions *gl, GLen
             qFatal("%s", stdmsg.c_str()); \
         }
         case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: {
-            msg += "ERROR: GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT (returned if any of the framebuffer attachment points are framebuffer incomplete)";
+            msg += "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT (returned if any of the framebuffer attachment points are framebuffer incomplete)";
             std::string stdmsg = msg.toStdString(); \
             qFatal("%s", stdmsg.c_str()); \
         }
         case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: {
-            msg += "ERROR: GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT (returned if the framebuffer does not have at least one image attached to it)";
+            msg += "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT (returned if the framebuffer does not have at least one image attached to it)";
             std::string stdmsg = msg.toStdString(); \
             qFatal("%s", stdmsg.c_str()); \
         }
         case GL_FRAMEBUFFER_UNSUPPORTED: {
-            msg += "ERROR: GL_FRAMEBUFFER_UNSUPPORTED (returned if depth and stencil attachments, if present, are not the same renderbuffer, or if the combination of internal formats of the attached images violates an implementation-dependent set of restrictions)";
+            msg += "GL_FRAMEBUFFER_UNSUPPORTED (returned if depth and stencil attachments, if present, are not the same renderbuffer, or if the combination of internal formats of the attached images violates an implementation-dependent set of restrictions)";
             std::string stdmsg = msg.toStdString(); \
             qFatal("%s", stdmsg.c_str()); \
         }
         case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: {
-            msg += "ERROR: GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE (returned if the value of GL_RENDERBUFFER_SAMPLES is not the same for all attached renderbuffers or, if the attached images are a mix of renderbuffers and textures, the value of GL_RENDERBUFFER_SAMPLES is not zero)";
+            msg += "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE (returned if the value of GL_RENDERBUFFER_SAMPLES is not the same for all attached renderbuffers or, if the attached images are a mix of renderbuffers and textures, the value of GL_RENDERBUFFER_SAMPLES is not zero)";
             std::string stdmsg = msg.toStdString(); \
             qFatal("%s", stdmsg.c_str()); \
         }
         case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS: {
-            msg += "ERROR: GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS (returned if any framebuffer attachment is layered, and any populated attachment is not layered, or if all populated color attachments are not from textures of the same target)";
+            msg += "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS (returned if any framebuffer attachment is layered, and any populated attachment is not layered, or if all populated color attachments are not from textures of the same target)";
             std::string stdmsg = msg.toStdString(); \
             qFatal("%s", stdmsg.c_str()); \
+        }
+        default: {
+            check_glError(gl, tag);
         }
         }
     }
@@ -241,62 +255,81 @@ void OpenGL_View::check_glCheckFramebufferStatus(QOpenGLExtraFunctions *gl, GLen
 }
 
 void OpenGL_View::createFBO(int w, int h) {
-    destroyFBO();
-
     auto gl = getOpenGLExtraFunctions();
     if (gl == nullptr) return;
+
     qDebug() << "w, h:" << w << "," << h;
 
-    // color
-    gl->glGenTextures(1, &fbo_color_texture);
-    gl->glBindTexture(GL_TEXTURE_2D, fbo_color_texture);
-    // multisample texture requires power of 2
-    // however making the texture larger than the screen shrinks the contents that is drawn
-    // effectively reducing the texture to a *power of 2* grid with everything else drawn as garbage data
-    // similar to split/quad screen with the bottom left being texture and everything else garbage
-    gl->glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, w, h);
+    if (generated) {
+        // texture buffers must be destroyed and then recreated in order to be resized
+        // ONLY if they are immutable storage (glTexStorage*)
+        // use glTexImage instead to avoid recreating
+        fboMSAA_color_texture.destroy();
+        check_glError(gl, "destroy");
+        fboMSAA_color_texture.create();
+        check_glError(gl, "create");
+    } else {
+        fboMSAA_color_texture.create();
+        check_glError(gl, "create");
 
-    // depth
-    gl->glGenRenderbuffers(1, &fbo_depth_renderbuffer);
-    gl->glBindRenderbuffer(GL_RENDERBUFFER, fbo_depth_renderbuffer);
-    gl->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
+        gl->glGenRenderbuffers(1, &fboMSAA_depth_renderbuffer);
+        check_glError(gl, "glGenRenderbuffers");
 
-    gl->glGenFramebuffers(1, &fbo);
-    gl->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    gl->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo_color_texture, 0);
-    gl->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fbo_depth_renderbuffer);
+        gl->glGenFramebuffers(1, &fboMSAA);
+        check_glError(gl, "glGenFramebuffers");
 
-    check_glCheckFramebufferStatus(gl, GL_FRAMEBUFFER);
+        gl->glGenVertexArrays(1, &quadVAO);
+        check_glError(gl, "glGenVertexArrays");
+        gl->glGenBuffers(1, &quadVBO);
+        check_glError(gl, "glGenBuffers");
+
+        qDebug("creating a fullscreen MSAA FBO");
+
+        int w = 1280;
+        int h = 800;
+
+
+        qDebug("created a fullscreen MSAA FBO");
+
+        generated = true;
+    }
 
     // color
     // we use QOpenGLTexture here because for some reason
     // gl->glTexStorage2DMultisample is unresolved and points to address 0x0
-    fboMSAA_color_texture.create();
     fboMSAA_color_texture.setFormat(QOpenGLTexture::TextureFormat::RGBA8_UNorm);
+    check_glError(gl, "setFormat");
     fboMSAA_color_texture.setSamples(8);
+    check_glError(gl, "setSamples");
     fboMSAA_color_texture.setFixedSamplePositions(true);
+    check_glError(gl, "setFixedSamplePositions");
     // multisample texture requires power of 2
     int pow2_w = isPowerOf2(w) ? w : qNextPowerOfTwo(w);
     int pow2_h = isPowerOf2(h) ? h : qNextPowerOfTwo(h);
     fboMSAA_color_texture.setSize(pow2_w, pow2_h);
-    fboMSAA_color_texture.allocateStorage();
+    check_glError(gl, "setSize");
+    fboMSAA_color_texture.allocateStorage(
+        QOpenGLTexture::PixelFormat::RGBA,
+        QOpenGLTexture::PixelType::UInt32_RGBA8
+    );
+    check_glError(gl, "allocateStorage");
 
     // depth
-    gl->glGenRenderbuffers(1, &fboMSAA_depth_renderbuffer);
     gl->glBindRenderbuffer(GL_RENDERBUFFER, fboMSAA_depth_renderbuffer);
+    check_glError(gl, "glBindRenderbuffer");
     gl->glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_DEPTH24_STENCIL8, w, h);
+    check_glError(gl, "glRenderbufferStorageMultisample");
 
-    gl->glGenFramebuffers(1, &fboMSAA);
+    // fbo
     gl->glBindFramebuffer(GL_FRAMEBUFFER, fboMSAA);
+    check_glError(gl, "glBindFramebuffer");
     gl->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, fboMSAA_color_texture.textureId(), 0);
+    check_glError(gl, "glFramebufferTexture2D");
     gl->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fboMSAA_depth_renderbuffer);
+    check_glError(gl, "glFramebufferRenderbuffer");
+    check_glCheckFramebufferStatus(gl, GL_FRAMEBUFFER, "FBO MSAA");
 
-    check_glCheckFramebufferStatus(gl, GL_FRAMEBUFFER);
-
-    // clear the FBOs to transparent
-    gl->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    gl->glClearColor(0, 0, 0, 0);
-    gl->glClear(GL_COLOR_BUFFER_BIT);
+    // clear the FBO to transparent
     gl->glBindFramebuffer(GL_FRAMEBUFFER, fboMSAA);
     gl->glClearColor(0, 0, 0, 0);
     gl->glClear(GL_COLOR_BUFFER_BIT);
@@ -314,11 +347,6 @@ void OpenGL_View::drawFBO(GLuint *defaultFBO) {
 
     int w = getWindowWidth();
     int h = getWindowHeight();
-
-    // blit fboAA to fbo
-    gl->glBindFramebuffer(GL_READ_FRAMEBUFFER, fboMSAA);
-    gl->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-    gl->glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 
     if (defaultFBO != nullptr) {
         gl->glBindFramebuffer(GL_FRAMEBUFFER, *defaultFBO);
@@ -366,13 +394,13 @@ void OpenGL_View::drawFBO(GLuint *defaultFBO) {
         f.prepend(QByteArrayLiteral("#version 330\n"));
     }
     if (!program.addShaderFromSourceCode(QOpenGLShader::Vertex, v)) {
-        throw new std::runtime_error("OPENGL SHADER VERTEX SHADER COMPILATION FAILED");
+        qFatal("OPENGL SHADER VERTEX SHADER COMPILATION FAILED");
     }
     if (!program.addShaderFromSourceCode(QOpenGLShader::Fragment, f)) {
-        throw new std::runtime_error("OPENGL SHADER FRAGMENT SHADER COMPILATION FAILED");
+        qFatal("OPENGL SHADER FRAGMENT SHADER COMPILATION FAILED");
     }
     if (!program.link()) {
-        throw new std::runtime_error("OPENGL SHADER LINK FAILED");
+        qFatal("OPENGL SHADER LINK FAILED");
     }
     program.bind();
 
@@ -395,21 +423,21 @@ void OpenGL_View::drawFBO(GLuint *defaultFBO) {
     auto bottomRight = pixelToNDC.toNDC<int, float>(offset_x, offset_h, false);
     auto bottomLeft = pixelToNDC.toNDC<int, float>(offset_w, offset_h, false);
 
-    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-     // positions   // texCoords
-     topLeft.x,     topLeft.y,     0.0f, 1.0f,
-     bottomRight.x, bottomRight.y, 0.0f, 0.0f,
-     bottomLeft.x,  bottomLeft.y,  1.0f, 0.0f,
+    float wf = w;
+    float hf = h;
 
-     topLeft.x,     topLeft.y,     0.0f, 1.0f,
-     bottomLeft.x,  bottomLeft.y,  1.0f, 0.0f,
-     topRight.x,    topRight.y,    1.0f, 1.0f
+    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+     // positions                  // texCoords
+     topLeft.x,     topLeft.y,     0, hf,
+     bottomRight.x, bottomRight.y, 0.0f, 0.0f,
+     bottomLeft.x,  bottomLeft.y,  wf, 0.0f,
+
+     topLeft.x,     topLeft.y,     0.0f, hf,
+     bottomLeft.x,  bottomLeft.y,  wf, 0.0f,
+     topRight.x,    topRight.y,    wf, hf
    };
 
     // screen quad VAO
-    unsigned int quadVAO, quadVBO;
-    gl->glGenVertexArrays(1, &quadVAO);
-    gl->glGenBuffers(1, &quadVBO);
     gl->glBindVertexArray(quadVAO);
     gl->glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
     gl->glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
@@ -420,11 +448,8 @@ void OpenGL_View::drawFBO(GLuint *defaultFBO) {
 
     gl->glBindVertexArray(quadVAO);
     gl->glDisable(GL_DEPTH_TEST);
-    gl->glBindTexture(GL_TEXTURE_2D, fbo_color_texture);
+    gl->glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, fboMSAA_color_texture.textureId());
     gl->glDrawArrays(GL_TRIANGLES, 0, 6);
-
-    gl->glDeleteVertexArrays(1, &quadVAO);
-    gl->glDeleteBuffers(1, &quadVBO);
 
     program.release();
 }
@@ -433,22 +458,21 @@ void OpenGL_View::destroyFBO() {
     auto gl = getOpenGLExtraFunctions();
     if (gl == nullptr) return;
 
-    gl->glDeleteFramebuffers(1, &fboMSAA);
-    fboMSAA = 0;
+    if (generated) {
+        gl->glDeleteTextures(1, &fbo_color_texture);
+        fboMSAA_color_texture.destroy();
 
-    fboMSAA_color_texture.destroy();
+        gl->glDeleteRenderbuffers(1, &fbo_depth_renderbuffer);
+        gl->glDeleteRenderbuffers(1, &fboMSAA_depth_renderbuffer);
 
-    gl->glDeleteRenderbuffers(1, &fboMSAA_depth_renderbuffer);
-    fboMSAA_depth_renderbuffer = 0;
+        gl->glDeleteFramebuffers(1, &fbo);
+        gl->glDeleteFramebuffers(1, &fboMSAA);
 
-    gl->glDeleteFramebuffers(1, &fbo);
-    fbo = 0;
+        gl->glDeleteVertexArrays(1, &quadVAO);
+        gl->glDeleteBuffers(1, &quadVBO);
 
-    gl->glDeleteTextures(1, &fbo_color_texture);
-    fbo_color_texture = 0;
-
-    gl->glDeleteRenderbuffers(1, &fbo_depth_renderbuffer);
-    fbo_depth_renderbuffer = 0;
+        generated = false;
+    }
 }
 
 void OpenGL_View::paintGLToFBO(GLuint *defaultFBO) {
