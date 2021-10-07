@@ -12,7 +12,6 @@ public:
 
     QOpenGLPaintDevice * paintDeviceOpenGL = nullptr;
     QPainter * painterGL = nullptr;
-    QImage * paintDeviceQImage = nullptr;
 
     QOpenGLContext * glContext = nullptr;
     QOpenGLFunctions * glES2Functions = nullptr;

@@ -124,7 +124,7 @@ public:
 private:
     LayoutParams * layoutParams = nullptr;
 
-    virtual void onPaintGL(QPainter * painter, QImage * paintDeviceQImage, GLuint *defaultFBO);
+    virtual void onPaintGL(QPainter * painter, GLuint *defaultFBO);
 
 public:
     PixelToNDC pixelToNDC;
@@ -186,6 +186,22 @@ public:
     void check_glCheckFramebufferStatus(QOpenGLExtraFunctions * gl, GLenum target, const char * tag = nullptr);
 
     void createFBO(int w, int h);
+
+    QImage createQImage();
+
+    QImage createQImage(uint pixel);
+
+    QImage createQImage(const QColor &color);
+
+    QImage createQImage(Qt::GlobalColor color);
+
+    int applyDpiScale(qreal value) const;
+
+    int applyDpiScale(int value) const;
+
+    qreal applyDpiScaleF(qreal value) const;
+
+    qreal applyDpiScaleF(int value) const;
 
     bool generated = false;
 

@@ -139,7 +139,7 @@ void OpenGL_View::onRemovedFromLayout()
     stopAnimation();
 }
 
-void OpenGL_View::onPaintGL(QPainter * painter, QImage * paintDeviceQImage, GLuint *defaultFBO) {}
+void OpenGL_View::onPaintGL(QPainter * painter, GLuint *defaultFBO) {}
 
 bool OpenGL_View::isLayout() const {
     return false;
@@ -178,14 +178,16 @@ void OpenGL_View::check_glError(GLenum error, const char * tag) {
             QTVSGLE(GL_INVALID_ENUM);
             QTVSGLE(GL_INVALID_FRAMEBUFFER_OPERATION);
             QTVSGLE(GL_INVALID_OPERATION);
-            QTVSGLE(GL_INVALID_INDEX);
             QTVSGLE(GL_INVALID_VALUE);
             QTVSGLE(GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT);
             QTVSGLE(GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT);
             QTVSGLE(GL_FRAMEBUFFER_UNSUPPORTED);
+#ifndef Q_OS_ANDROID
+            QTVSGLE(GL_INVALID_INDEX);
             QTVSGLE(GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE);
             QTVSGLE(GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS);
             QTVSGLE(GL_FRAMEBUFFER_UNDEFINED);
+#endif
             QTVSGLE(GL_OUT_OF_MEMORY);
             default: {
                 QString msg = "ERROR: ";
@@ -217,11 +219,6 @@ void OpenGL_View::check_glCheckFramebufferStatus(QOpenGLExtraFunctions *gl, GLen
             msg += ") ";
         }
         switch(s) {
-        case GL_FRAMEBUFFER_UNDEFINED: {
-            msg += "GL_FRAMEBUFFER_UNDEFINED (returned if target is the default framebuffer, but the default framebuffer does not exist)";
-            std::string stdmsg = msg.toStdString(); \
-            qFatal("%s", stdmsg.c_str()); \
-        }
         case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: {
             msg += "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT (returned if any of the framebuffer attachment points are framebuffer incomplete)";
             std::string stdmsg = msg.toStdString(); \
@@ -237,6 +234,12 @@ void OpenGL_View::check_glCheckFramebufferStatus(QOpenGLExtraFunctions *gl, GLen
             std::string stdmsg = msg.toStdString(); \
             qFatal("%s", stdmsg.c_str()); \
         }
+#ifndef Q_OS_ANDROID
+        case GL_FRAMEBUFFER_UNDEFINED: {
+            msg += "GL_FRAMEBUFFER_UNDEFINED (returned if target is the default framebuffer, but the default framebuffer does not exist)";
+            std::string stdmsg = msg.toStdString(); \
+            qFatal("%s", stdmsg.c_str()); \
+        }
         case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: {
             msg += "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE (returned if the value of GL_RENDERBUFFER_SAMPLES is not the same for all attached renderbuffers or, if the attached images are a mix of renderbuffers and textures, the value of GL_RENDERBUFFER_SAMPLES is not zero)";
             std::string stdmsg = msg.toStdString(); \
@@ -247,6 +250,7 @@ void OpenGL_View::check_glCheckFramebufferStatus(QOpenGLExtraFunctions *gl, GLen
             std::string stdmsg = msg.toStdString(); \
             qFatal("%s", stdmsg.c_str()); \
         }
+#endif
         default: {
             check_glError(gl, tag);
         }
@@ -259,8 +263,6 @@ void OpenGL_View::createFBO(int w, int h) {
     auto gl = getOpenGLExtraFunctions();
     if (gl == nullptr) return;
 
-    qDebug() << "w, h:" << w << "," << h;
-
     if (generated) {
         // texture buffers must be destroyed and then recreated in order to be resized
         // ONLY if they are immutable storage (glTexStorage*)
@@ -271,19 +273,28 @@ void OpenGL_View::createFBO(int w, int h) {
         gl->glGenTextures(1, &fbo_color_texture);
         gl->glGenRenderbuffers(1, &fbo_depth_renderbuffer);
         gl->glGenFramebuffers(1, &fbo);
-
-        gl->glGenVertexArrays(1, &quadVAO);
-        gl->glGenBuffers(1, &quadVBO);
         generated = true;
     }
 
     // color
     gl->glBindTexture(GL_TEXTURE_2D, fbo_color_texture);
-    gl->glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, w, h);
+    gl->glTexStorage2D(GL_TEXTURE_2D, 1,
+#ifdef Q_OS_ANDROID
+        GL_RGBA8_OES
+#else
+        GL_RGBA8
+#endif
+    , w, h);
 
     // depth
     gl->glBindRenderbuffer(GL_RENDERBUFFER, fbo_depth_renderbuffer);
-    gl->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
+    gl->glRenderbufferStorage(GL_RENDERBUFFER,
+#ifdef Q_OS_ANDROID
+      GL_DEPTH24_STENCIL8_OES
+#else
+      GL_DEPTH24_STENCIL8
+#endif
+    , w, h);
 
     // fbo
     gl->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -291,10 +302,55 @@ void OpenGL_View::createFBO(int w, int h) {
     gl->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fbo_depth_renderbuffer);
     check_glCheckFramebufferStatus(gl, GL_FRAMEBUFFER, "FBO");
 
-    // clear the FBOs to transparent
+    // clear the FBO to transparent
     gl->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     gl->glClearColor(0, 0, 0, 0);
     gl->glClear(GL_COLOR_BUFFER_BIT);
+}
+
+QImage OpenGL_View::createQImage() {
+    return createQImage(Qt::transparent);
+}
+
+QImage OpenGL_View::createQImage(uint pixel) {
+    QImage image(paintHolder.getSize(), QImage::Format_ARGB32);
+    // initialize QImage to transparent
+    image.fill(pixel);
+    return image;
+}
+
+QImage OpenGL_View::createQImage(const QColor &color) {
+    QImage image(paintHolder.getSize(), QImage::Format_ARGB32);
+    // initialize QImage to transparent
+    image.fill(color);
+    return image;
+}
+
+QImage OpenGL_View::createQImage(Qt::GlobalColor color) {
+    QImage image(paintHolder.getSize(), QImage::Format_ARGB32);
+    // initialize QImage to transparent
+    image.fill(color);
+    return image;
+}
+
+int OpenGL_View::applyDpiScale(qreal value) const {
+    if (windowData == nullptr) qFatal("cannot apply dpi scale with no window data");
+    return windowData->applyDpiScale(value);
+}
+
+int OpenGL_View::applyDpiScale(int value) const {
+    if (windowData == nullptr) qFatal("cannot apply dpi scale with no window data");
+    return windowData->applyDpiScale(value);
+}
+
+qreal OpenGL_View::applyDpiScaleF(qreal value) const {
+    if (windowData == nullptr) qFatal("cannot apply dpi scale with no window data");
+    return windowData->applyDpiScale(value);
+}
+
+qreal OpenGL_View::applyDpiScaleF(int value) const {
+    if (windowData == nullptr) qFatal("cannot apply dpi scale with no window data");
+    return windowData->applyDpiScale(value);
 }
 
 void OpenGL_View::bindFBO() {
@@ -395,6 +451,8 @@ void OpenGL_View::drawFBO(GLuint *defaultFBO) {
    };
 
     // screen quad VAO
+    gl->glGenVertexArrays(1, &quadVAO);
+    gl->glGenBuffers(1, &quadVBO);
     gl->glBindVertexArray(quadVAO);
     gl->glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
     gl->glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
@@ -407,6 +465,8 @@ void OpenGL_View::drawFBO(GLuint *defaultFBO) {
     gl->glDisable(GL_DEPTH_TEST);
     gl->glBindTexture(GL_TEXTURE_2D, fbo_color_texture);
     gl->glDrawArrays(GL_TRIANGLES, 0, 6);
+    gl->glDeleteVertexArrays(1, &quadVAO);
+    gl->glDeleteBuffers(1, &quadVBO);
 
     gl->glDisable(GL_SCISSOR_TEST);
 
@@ -422,18 +482,15 @@ void OpenGL_View::destroyFBO() {
         gl->glDeleteRenderbuffers(1, &fbo_depth_renderbuffer);
         gl->glDeleteFramebuffers(1, &fbo);
 
-        gl->glDeleteVertexArrays(1, &quadVAO);
-        gl->glDeleteBuffers(1, &quadVBO);
-
         generated = false;
     }
 }
 
 void OpenGL_View::paintGLToFBO(GLuint *defaultFBO) {
     bindFBO();
-    // draw to framebuffer
     auto * gl = getOpenGLExtraFunctions();
-    // clear the current FBO to transparent
+
+    // clear FBO to transparent
     gl->glClearColor(0, 0, 0, 0);
     gl->glClear(GL_COLOR_BUFFER_BIT);
 
@@ -442,7 +499,7 @@ void OpenGL_View::paintGLToFBO(GLuint *defaultFBO) {
     gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     auto * painterGL = paintHolder.beginGL();
-    onPaintGL(painterGL, paintHolder.paintDeviceQImage, &fbo);
+    onPaintGL(painterGL, &fbo);
     painterGL->end();
 
     gl->glEnable(GL_DEPTH_TEST);

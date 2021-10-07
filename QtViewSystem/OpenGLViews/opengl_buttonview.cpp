@@ -46,14 +46,15 @@ OpenGL_ButtonView::OpenGL_ButtonView(const QString &text, const QColor &textColo
 
 OpenGL_ButtonView::OpenGL_ButtonView(const QString &text, const int &textSize, const QColor &textColor) : text(text), textSize(textSize), textColor(textColor) {}
 
-void OpenGL_ButtonView::onPaintGL(QPainter *painter, QImage * paintDeviceQImage, GLuint *defaultFBO)
+void OpenGL_ButtonView::onPaintGL(QPainter *painter, GLuint *defaultFBO)
 {
-    auto painter_ = QPainter(paintDeviceQImage);
     float radius = 10;
     float a = radius/2;
-    QRect w = painter_.window();
+    QRect w = painter->window();
     QRect r = w.adjusted(a, a, -a, -a);
     if (r.isValid()) {
+        auto image = createQImage();
+        auto painter_ = QPainter(&image);
         painter_.setRenderHint(QPainter::Antialiasing, true);
         painter_.setRenderHint(QPainter::SmoothPixmapTransform, true);
         QPainterPath path;
@@ -67,10 +68,10 @@ void OpenGL_ButtonView::onPaintGL(QPainter *painter, QImage * paintDeviceQImage,
         painter_.setCompositionMode(c);
 
         QFont f = painter_.font();
-        f.setPixelSize(textSize);
+        f.setPixelSize(applyDpiScale(textSize));
         painter_.setFont(f);
         painter_.setPen(textColor);
         painter_.drawText(r, Qt::TextWordWrap | Qt::AlignmentFlag::AlignCenter, text);
+        painter->drawImage(w, image);
     }
-    painter->drawImage(w, *paintDeviceQImage);
 }

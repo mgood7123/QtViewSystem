@@ -24,7 +24,8 @@ SOURCES += \
     Tools/TimeEngine.cpp \
     Tools/paintholder.cpp \
     main.cpp \
-    qtopenglviewsystem.cpp
+    qtopenglviewsystem.cpp \
+    qtopenglviewsystemwindowdata.cpp
 
 HEADERS += \
     Helpers/CoordinateHelper.h \

@@ -26,7 +26,7 @@ QtOpenGLViewSystem::QtOpenGLViewSystem(QOpenGLWindow::UpdateBehavior updateBehav
     }
 
     // request debug context
-//    fmt.setOption(QSurfaceFormat::DebugContext);
+    fmt.setOption(QSurfaceFormat::DebugContext);
 
     setFormat(fmt);
 }
@@ -61,6 +61,8 @@ void QtOpenGLViewSystem::setContentView(OpenGL_View *view, OpenGL_View::LayoutPa
 
 void QtOpenGLViewSystem::handleLoggedMessage(const QOpenGLDebugMessage& debugMessage) {
     qDebug() << debugMessage;
+//    auto msg = debugMessage.message().toStdString();
+//    qFatal(msg.c_str());
 }
 
 void QtOpenGLViewSystem::initializeGL()
@@ -98,8 +100,9 @@ void QtOpenGLViewSystem::resizeGL(int w, int h)
 void QtOpenGLViewSystem::paintGL()
 {
     // clear to black
-    glClearColor(0, 0, 0, 1);
+    glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
+
     if (contentView != nullptr) {
         int w = windowData->applyDpiScale(width());
         int h = windowData->applyDpiScale(height());

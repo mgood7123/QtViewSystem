@@ -16,7 +16,7 @@ OpenGL_ColorView::OpenGL_ColorView(QColor color)
 }
 
 
-void OpenGL_ColorView::onPaintGL(QPainter *painter, QImage * paintDeviceQImage, GLuint *defaultFBO)
+void OpenGL_ColorView::onPaintGL(QPainter *painter, GLuint *defaultFBO)
 {
     auto * gl = getOpenGLExtraFunctions();
     painter->beginNativePainting();

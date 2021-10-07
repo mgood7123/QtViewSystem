@@ -23,8 +23,6 @@ void PaintHolder::deallocate()
     glContext = nullptr;
     delete paintDeviceOpenGL;
     paintDeviceOpenGL = nullptr;
-    delete paintDeviceQImage;
-    paintDeviceQImage = nullptr;
 }
 
 void PaintHolder::allocate(const QSize &size)
@@ -45,9 +43,6 @@ void PaintHolder::allocate(const int &width, const int &height)
         glContext = paintDeviceOpenGL->context();
         glES2Functions = glContext->functions();
         glES3Functions = glContext->extraFunctions();
-        paintDeviceQImage = new QImage(width, height, QImage::Format_ARGB32);
-        // initialize QImage to transparent
-        paintDeviceQImage->fill(Qt::transparent);
     }
 }
 
@@ -87,9 +82,6 @@ PaintHolder::PaintHolder(PaintHolder &&other) {
 
     paintDeviceOpenGL = other.paintDeviceOpenGL;
     other.paintDeviceOpenGL = nullptr;
-
-    paintDeviceQImage = other.paintDeviceQImage;
-    other.paintDeviceQImage = nullptr;
 }
 
 PaintHolder &PaintHolder::operator=(PaintHolder &&other) {
@@ -106,9 +98,6 @@ PaintHolder &PaintHolder::operator=(PaintHolder &&other) {
 
     glContext = other.glContext;
     other.glContext = nullptr;
-
-    paintDeviceQImage = other.paintDeviceQImage;
-    other.paintDeviceQImage = nullptr;
 
     return *this;
 }

@@ -11,21 +11,13 @@ public:
     QScreen * screen = nullptr;
     qreal dpiScale = 1;
 
-    inline int applyDpiScale(qreal value) const {
-        return static_cast<int>(dpiScale * value);
-    }
+    int applyDpiScale(qreal value) const;
 
-    inline int applyDpiScale(int value) const {
-        return applyDpiScale(qreal(value));
-    }
+    int applyDpiScale(int value) const;
 
-    inline qreal applyDpiScaleF(qreal value) const {
-        return dpiScale * value;
-    }
+    qreal applyDpiScaleF(qreal value) const;
 
-    inline qreal applyDpiScaleF(int value) const {
-        return applyDpiScaleF(qreal(value));
-    }
+    qreal applyDpiScaleF(int value) const;
 };
 
 #endif // QTOPENGLVIEWSYSTEMWINDOWDATA_H
