@@ -9,7 +9,7 @@ public:
     QtViewSystemManualView() {
         addChild(new OpenGL_ColorView(Qt::white));
 
-        auto * title = new OpenGL_ButtonView("Welcome to the\nQt View System", 20, Qt::black);
+        auto * title = new OpenGL_ButtonView("Welcome to the\nQt View System", 20, Qt::white);
         auto * titlePage = new OpenGL_LinearLayout();
 
         auto * ll = makeLayoutParams_MATCH_PARENT<OpenGL_LinearLayout::LinearLayoutParams>();

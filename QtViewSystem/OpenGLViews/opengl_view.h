@@ -5,6 +5,9 @@
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
+#include <QImage>
+#include <QImageReader>
+#include <QImageWriter>
 
 // OpenGL
 #include <QOpenGLContext>
@@ -121,7 +124,7 @@ public:
 private:
     LayoutParams * layoutParams = nullptr;
 
-    virtual void onPaintGL(QPainter * painter, GLuint * defaultFBO);
+    virtual void onPaintGL(QPainter * painter, QImage * paintDeviceQImage, GLuint *defaultFBO);
 
 public:
     PixelToNDC pixelToNDC;
@@ -188,8 +191,6 @@ public:
 
     GLuint quadVAO, quadVBO;
     GLuint fbo = 0, fbo_color_texture = 0, fbo_depth_renderbuffer = 0;
-    GLuint fboMSAA = 0, fboMSAA_depth_renderbuffer = 0;
-    QOpenGLTexture fboMSAA_color_texture = QOpenGLTexture(QOpenGLTexture::Target2DMultisample);
 
     void bindFBO();
 

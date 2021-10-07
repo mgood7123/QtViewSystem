@@ -1,6 +1,7 @@
 #ifndef PAINTHOLDER_H
 #define PAINTHOLDER_H
 
+#include <QImage>
 #include <QOpenGLPaintDevice>
 #include <QPainter>
 
@@ -9,14 +10,15 @@ class PaintHolder {
 
 public:
 
-    QOpenGLPaintDevice * paintDevice = nullptr;
-    QPainter * painter = nullptr;
+    QOpenGLPaintDevice * paintDeviceOpenGL = nullptr;
+    QPainter * painterGL = nullptr;
+    QImage * paintDeviceQImage = nullptr;
 
     QOpenGLContext * glContext = nullptr;
     QOpenGLFunctions * glES2Functions = nullptr;
     QOpenGLExtraFunctions* glES3Functions = nullptr;
 
-    QPainter * begin();
+    QPainter * beginGL();
 
     void resize(const QSize & size);
 

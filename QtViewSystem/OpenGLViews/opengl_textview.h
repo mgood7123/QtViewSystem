@@ -31,7 +31,7 @@ public:
 
     // OpenGLView interface
 private:
-    virtual void onPaintGL(QPainter * painter, GLuint * defaultFBO) override;
+    virtual void onPaintGL(QPainter * painter, QImage * paintDeviceQImage, GLuint *defaultFBO) override;
 };
 
 #endif // OPENGL_TEXTVIEW_H

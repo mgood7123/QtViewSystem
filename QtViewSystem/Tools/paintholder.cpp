@@ -1,9 +1,9 @@
 #include "paintholder.h"
 
-QPainter *PaintHolder::begin() {
-    if (painter == nullptr) return nullptr;
-    painter->begin(paintDevice);
-    return painter;
+QPainter *PaintHolder::beginGL() {
+    if (painterGL == nullptr) return nullptr;
+    painterGL->begin(paintDeviceOpenGL);
+    return painterGL;
 }
 
 void PaintHolder::resize(const QSize &size) {
@@ -16,13 +16,15 @@ void PaintHolder::resize(const int &width, const int &height) {
 
 void PaintHolder::deallocate()
 {
-    delete painter;
-    painter = nullptr;
+    delete painterGL;
+    painterGL = nullptr;
     glES3Functions = nullptr;
     glES2Functions = nullptr;
     glContext = nullptr;
-    delete paintDevice;
-    paintDevice = nullptr;
+    delete paintDeviceOpenGL;
+    paintDeviceOpenGL = nullptr;
+    delete paintDeviceQImage;
+    paintDeviceQImage = nullptr;
 }
 
 void PaintHolder::allocate(const QSize &size)
@@ -38,11 +40,14 @@ void PaintHolder::allocate(const int &width, const int &height)
     if (size != s) {
         size = s;
         deallocate();
-        paintDevice = new QOpenGLPaintDevice(width, height);
-        painter = new QPainter();
-        glContext = paintDevice->context();
+        paintDeviceOpenGL = new QOpenGLPaintDevice(width, height);
+        painterGL = new QPainter();
+        glContext = paintDeviceOpenGL->context();
         glES2Functions = glContext->functions();
         glES3Functions = glContext->extraFunctions();
+        paintDeviceQImage = new QImage(width, height, QImage::Format_ARGB32);
+        // initialize QImage to transparent
+        paintDeviceQImage->fill(Qt::transparent);
     }
 }
 
@@ -80,15 +85,16 @@ PaintHolder::PaintHolder(PaintHolder &&other) {
     glContext = other.glContext;
     other.glContext = nullptr;
 
-    paintDevice = other.paintDevice;
-    other.paintDevice = nullptr;
+    paintDeviceOpenGL = other.paintDeviceOpenGL;
+    other.paintDeviceOpenGL = nullptr;
 
-    painter = other.painter;
-    other.painter = nullptr;
+    paintDeviceQImage = other.paintDeviceQImage;
+    other.paintDeviceQImage = nullptr;
 }
 
 PaintHolder &PaintHolder::operator=(PaintHolder &&other) {
     deallocate();
+
     size = other.size;
     other.size = {0, 0};
 
@@ -101,11 +107,9 @@ PaintHolder &PaintHolder::operator=(PaintHolder &&other) {
     glContext = other.glContext;
     other.glContext = nullptr;
 
-    paintDevice = other.paintDevice;
-    other.paintDevice = nullptr;
+    paintDeviceQImage = other.paintDeviceQImage;
+    other.paintDeviceQImage = nullptr;
 
-    painter = other.painter;
-    other.painter = nullptr;
     return *this;
 }
 

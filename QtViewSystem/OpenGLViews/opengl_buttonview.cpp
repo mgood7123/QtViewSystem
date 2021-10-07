@@ -46,28 +46,31 @@ OpenGL_ButtonView::OpenGL_ButtonView(const QString &text, const QColor &textColo
 
 OpenGL_ButtonView::OpenGL_ButtonView(const QString &text, const int &textSize, const QColor &textColor) : text(text), textSize(textSize), textColor(textColor) {}
 
-void OpenGL_ButtonView::onPaintGL(QPainter *painter, GLuint *defaultFBO)
+void OpenGL_ButtonView::onPaintGL(QPainter *painter, QImage * paintDeviceQImage, GLuint *defaultFBO)
 {
+    auto painter_ = QPainter(paintDeviceQImage);
     float radius = 10;
     float a = radius/2;
-    QRect r = painter->window().adjusted(a, a, -a, -a);
+    QRect w = painter_.window();
+    QRect r = w.adjusted(a, a, -a, -a);
     if (r.isValid()) {
-        painter->setRenderHint(QPainter::Antialiasing, true);
-        painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter_.setRenderHint(QPainter::Antialiasing, true);
+        painter_.setRenderHint(QPainter::SmoothPixmapTransform, true);
         QPainterPath path;
-        path.addRoundedRect(QRectF(painter->window()), radius, radius);
+        path.addRoundedRect(QRectF(w), radius, radius);
         QPen pen(Qt::green, radius);
-        painter->setPen(pen);
-        painter->fillPath(path, QColor("#404040"));
-        auto c = painter->compositionMode();
-        painter->setCompositionMode(QPainter::CompositionMode_Clear);
-        painter->drawPath(path);
-        painter->setCompositionMode(c);
+        painter_.setPen(pen);
+        painter_.fillPath(path, QColor("#404040"));
+        auto c = painter_.compositionMode();
+        painter_.setCompositionMode(QPainter::CompositionMode_Clear);
+        painter_.drawPath(path);
+        painter_.setCompositionMode(c);
 
-        QFont f = painter->font();
+        QFont f = painter_.font();
         f.setPixelSize(textSize);
-        painter->setFont(f);
-        painter->setPen(textColor);
-        painter->drawText(r, Qt::TextWordWrap | Qt::AlignmentFlag::AlignCenter, text);
+        painter_.setFont(f);
+        painter_.setPen(textColor);
+        painter_.drawText(r, Qt::TextWordWrap | Qt::AlignmentFlag::AlignCenter, text);
     }
+    painter->drawImage(w, *paintDeviceQImage);
 }

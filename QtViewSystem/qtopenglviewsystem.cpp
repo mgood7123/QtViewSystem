@@ -8,12 +8,12 @@ QtOpenGLViewSystem::QtOpenGLViewSystem(QOpenGLWindow::UpdateBehavior updateBehav
     windowData->dpiScale = devicePixelRatio();
 
     QSurfaceFormat fmt;
-    fmt.setDepthBufferSize(24);
-    fmt.setBlueBufferSize(8);
+    fmt.setAlphaBufferSize(8);
     fmt.setRedBufferSize(8);
     fmt.setGreenBufferSize(8);
-    fmt.setAlphaBufferSize(8);
-    fmt.setSamples(8);
+    fmt.setBlueBufferSize(8);
+    fmt.setDepthBufferSize(24);
+    fmt.setStencilBufferSize(8);
 
     // Request OpenGL 4.3 core or OpenGL ES 3.2
     if (QOpenGLContext::openGLModuleType() == QOpenGLContext::LibGL) {
@@ -26,7 +26,7 @@ QtOpenGLViewSystem::QtOpenGLViewSystem(QOpenGLWindow::UpdateBehavior updateBehav
     }
 
     // request debug context
-    fmt.setOption(QSurfaceFormat::DebugContext);
+//    fmt.setOption(QSurfaceFormat::DebugContext);
 
     setFormat(fmt);
 }

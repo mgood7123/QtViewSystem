@@ -139,7 +139,7 @@ void OpenGL_View::onRemovedFromLayout()
     stopAnimation();
 }
 
-void OpenGL_View::onPaintGL(QPainter * painter, GLuint *defaultFBO) {}
+void OpenGL_View::onPaintGL(QPainter * painter, QImage * paintDeviceQImage, GLuint *defaultFBO) {}
 
 bool OpenGL_View::isLayout() const {
     return false;
@@ -265,82 +265,41 @@ void OpenGL_View::createFBO(int w, int h) {
         // texture buffers must be destroyed and then recreated in order to be resized
         // ONLY if they are immutable storage (glTexStorage*)
         // use glTexImage instead to avoid recreating
-        fboMSAA_color_texture.destroy();
-        check_glError(gl, "destroy");
-        fboMSAA_color_texture.create();
-        check_glError(gl, "create");
+        gl->glDeleteTextures(1, &fbo_color_texture);
+        gl->glGenTextures(1, &fbo_color_texture);
     } else {
-        fboMSAA_color_texture.create();
-        check_glError(gl, "create");
-
-        gl->glGenRenderbuffers(1, &fboMSAA_depth_renderbuffer);
-        check_glError(gl, "glGenRenderbuffers");
-
-        gl->glGenFramebuffers(1, &fboMSAA);
-        check_glError(gl, "glGenFramebuffers");
+        gl->glGenTextures(1, &fbo_color_texture);
+        gl->glGenRenderbuffers(1, &fbo_depth_renderbuffer);
+        gl->glGenFramebuffers(1, &fbo);
 
         gl->glGenVertexArrays(1, &quadVAO);
-        check_glError(gl, "glGenVertexArrays");
         gl->glGenBuffers(1, &quadVBO);
-        check_glError(gl, "glGenBuffers");
-
-        qDebug("creating a fullscreen MSAA FBO");
-
-        int w = 1280;
-        int h = 800;
-
-
-        qDebug("created a fullscreen MSAA FBO");
-
         generated = true;
     }
 
     // color
-    // we use QOpenGLTexture here because for some reason
-    // gl->glTexStorage2DMultisample is unresolved and points to address 0x0
-    fboMSAA_color_texture.setFormat(QOpenGLTexture::TextureFormat::RGBA8_UNorm);
-    check_glError(gl, "setFormat");
-    fboMSAA_color_texture.setSamples(8);
-    check_glError(gl, "setSamples");
-    fboMSAA_color_texture.setFixedSamplePositions(true);
-    check_glError(gl, "setFixedSamplePositions");
-    // multisample texture requires power of 2
-    int pow2_w = isPowerOf2(w) ? w : qNextPowerOfTwo(w);
-    int pow2_h = isPowerOf2(h) ? h : qNextPowerOfTwo(h);
-    fboMSAA_color_texture.setSize(pow2_w, pow2_h);
-    check_glError(gl, "setSize");
-    fboMSAA_color_texture.allocateStorage(
-        QOpenGLTexture::PixelFormat::RGBA,
-        QOpenGLTexture::PixelType::UInt32_RGBA8
-    );
-    check_glError(gl, "allocateStorage");
+    gl->glBindTexture(GL_TEXTURE_2D, fbo_color_texture);
+    gl->glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, w, h);
 
     // depth
-    gl->glBindRenderbuffer(GL_RENDERBUFFER, fboMSAA_depth_renderbuffer);
-    check_glError(gl, "glBindRenderbuffer");
-    gl->glRenderbufferStorageMultisample(GL_RENDERBUFFER, 8, GL_DEPTH24_STENCIL8, w, h);
-    check_glError(gl, "glRenderbufferStorageMultisample");
+    gl->glBindRenderbuffer(GL_RENDERBUFFER, fbo_depth_renderbuffer);
+    gl->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
 
     // fbo
-    gl->glBindFramebuffer(GL_FRAMEBUFFER, fboMSAA);
-    check_glError(gl, "glBindFramebuffer");
-    gl->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, fboMSAA_color_texture.textureId(), 0);
-    check_glError(gl, "glFramebufferTexture2D");
-    gl->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fboMSAA_depth_renderbuffer);
-    check_glError(gl, "glFramebufferRenderbuffer");
-    check_glCheckFramebufferStatus(gl, GL_FRAMEBUFFER, "FBO MSAA");
+    gl->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    gl->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo_color_texture, 0);
+    gl->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fbo_depth_renderbuffer);
+    check_glCheckFramebufferStatus(gl, GL_FRAMEBUFFER, "FBO");
 
-    // clear the FBO to transparent
-    gl->glBindFramebuffer(GL_FRAMEBUFFER, fboMSAA);
+    // clear the FBOs to transparent
+    gl->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     gl->glClearColor(0, 0, 0, 0);
     gl->glClear(GL_COLOR_BUFFER_BIT);
-
-    // dont clear as we copy fboAA directly to this
 }
 
 void OpenGL_View::bindFBO() {
     auto gl = getOpenGLExtraFunctions();
-    gl->glBindFramebuffer(GL_FRAMEBUFFER, fboMSAA);
+    gl->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 }
 
 void OpenGL_View::drawFBO(GLuint *defaultFBO) {
@@ -424,18 +383,15 @@ void OpenGL_View::drawFBO(GLuint *defaultFBO) {
     auto bottomRight = pixelToNDC.toNDC<int, float>(offset_x, offset_h, false);
     auto bottomLeft = pixelToNDC.toNDC<int, float>(offset_w, offset_h, false);
 
-    float wf = w;
-    float hf = h;
-
     float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
      // positions                  // texCoords
-     topLeft.x,     topLeft.y,     0, hf,
-     bottomRight.x, bottomRight.y, 0.0f, 0.0f,
-     bottomLeft.x,  bottomLeft.y,  wf, 0.0f,
+     topLeft.x,     topLeft.y,     0, 1,
+     bottomRight.x, bottomRight.y, 0, 0,
+     bottomLeft.x,  bottomLeft.y,  1, 0,
 
-     topLeft.x,     topLeft.y,     0.0f, hf,
-     bottomLeft.x,  bottomLeft.y,  wf, 0.0f,
-     topRight.x,    topRight.y,    wf, hf
+     topLeft.x,     topLeft.y,     0, 1,
+     bottomLeft.x,  bottomLeft.y,  1, 0,
+     topRight.x,    topRight.y,    1, 1
    };
 
     // screen quad VAO
@@ -449,8 +405,10 @@ void OpenGL_View::drawFBO(GLuint *defaultFBO) {
 
     gl->glBindVertexArray(quadVAO);
     gl->glDisable(GL_DEPTH_TEST);
-    gl->glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, fboMSAA_color_texture.textureId());
+    gl->glBindTexture(GL_TEXTURE_2D, fbo_color_texture);
     gl->glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    gl->glDisable(GL_SCISSOR_TEST);
 
     program.release();
 }
@@ -461,13 +419,8 @@ void OpenGL_View::destroyFBO() {
 
     if (generated) {
         gl->glDeleteTextures(1, &fbo_color_texture);
-        fboMSAA_color_texture.destroy();
-
         gl->glDeleteRenderbuffers(1, &fbo_depth_renderbuffer);
-        gl->glDeleteRenderbuffers(1, &fboMSAA_depth_renderbuffer);
-
         gl->glDeleteFramebuffers(1, &fbo);
-        gl->glDeleteFramebuffers(1, &fboMSAA);
 
         gl->glDeleteVertexArrays(1, &quadVAO);
         gl->glDeleteBuffers(1, &quadVBO);
@@ -488,9 +441,9 @@ void OpenGL_View::paintGLToFBO(GLuint *defaultFBO) {
     gl->glEnable(GL_BLEND);
     gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    auto * painter = paintHolder.begin();
-    onPaintGL(painter, &fboMSAA);
-    painter->end();
+    auto * painterGL = paintHolder.beginGL();
+    onPaintGL(painterGL, paintHolder.paintDeviceQImage, &fbo);
+    painterGL->end();
 
     gl->glEnable(GL_DEPTH_TEST);
     gl->glEnable(GL_BLEND);
