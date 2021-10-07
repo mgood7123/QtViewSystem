@@ -186,6 +186,7 @@ void OpenGL_View::check_glError(GLenum error, const char * tag) {
             QTVSGLE(GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE);
             QTVSGLE(GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS);
             QTVSGLE(GL_FRAMEBUFFER_UNDEFINED);
+            QTVSGLE(GL_OUT_OF_MEMORY);
             default: {
                 QString msg = "ERROR: ";
                 if (tag != nullptr) {
