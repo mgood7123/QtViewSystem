@@ -8,6 +8,8 @@ class OpenGL_ColorView : public OpenGL_View
 {
     QColor color;
 public:
+    OpenGL_ColorView(float r, float g, float b);
+    OpenGL_ColorView(float r, float g, float b, float a);
     OpenGL_ColorView(QColor color);
 
     const QColor &getColor() const;

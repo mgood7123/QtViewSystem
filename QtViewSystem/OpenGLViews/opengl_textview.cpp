@@ -48,10 +48,18 @@ OpenGL_TextView::OpenGL_TextView(const QString &text, const int &textSize, const
 
 void OpenGL_TextView::onPaintGL(QPainter * painter, GLuint *defaultFBO)
 {
-    QFont f = painter->font();
-    f.setPixelSize(textSize);
-    painter->setFont(f);
-    painter->setPen(textColor);
+    // text renders as blocks when drawn to a fbo, work around this by using QImage
+
+    auto image = createQImage();
+    auto painter_ = QPainter(&image);
+
+    painter_.setRenderHint(QPainter::Antialiasing, true);
+    painter_.setRenderHint(QPainter::SmoothPixmapTransform, true);
+
+    QFont f = painter_.font();
+    f.setPixelSize(applyDpiScale(textSize));
+    painter_.setFont(f);
+    painter_.setPen(textColor);
 
     auto * l = getLayoutParams();
     Qt::AlignmentFlag alignment;
@@ -67,5 +75,9 @@ void OpenGL_TextView::onPaintGL(QPainter * painter, GLuint *defaultFBO)
             alignment = Qt::AlignmentFlag::AlignRight;
             break;
     }
-    painter->drawText(painter->window(), Qt::TextWordWrap | alignment, text);
+
+    QRect w = painter_.window();
+
+    painter_.drawText(w, Qt::TextWordWrap | alignment, text);
+    painter->drawImage(w, image);
 }

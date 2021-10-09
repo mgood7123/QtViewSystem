@@ -74,7 +74,7 @@ void OpenGL_View::measure(int width, int height)
     measuredDimensions = INVALID_MEASUREMENT_DIMENSION;
     onMeasure(width, height);
     if (measuredDimensions == INVALID_MEASUREMENT_DIMENSION) {
-        qFatal("invalid measurement, did you forget to call setMeasuredDimensions(const QSize &); ?");
+        qFatal("invalid measurement, did you forget to call `setMeasuredDimensions(const QSize &);` ?");
     }
 }
 
@@ -85,6 +85,7 @@ void OpenGL_View::setMeasuredDimensions(int width, int height)
 
 void OpenGL_View::setMeasuredDimensions(const QSize &size)
 {
+    canDraw = !size.isEmpty();
     measuredDimensions = size;
 }
 
@@ -125,8 +126,16 @@ void OpenGL_View::onResizeGL(QSize window_size) {
 }
 
 void OpenGL_View::onResizeGL(int window_w, int window_h) {
-    paintHolder.resize(window_w, window_h);
-    createFBO(window_w, window_h);
+    bool resizeOccured = paintHolder.resize(window_w, window_h);
+    canDraw = paintHolder.paintDeviceOpenGL != nullptr;
+    if (canDraw) {
+        // dont resize fbo if the size did not change
+        if (resizeOccured) {
+            resizeFBO(window_w, window_h);
+        }
+    } else {
+        if (generated) destroyFBO();
+    }
 }
 
 void OpenGL_View::onAddedToLayout()
@@ -259,9 +268,13 @@ void OpenGL_View::check_glCheckFramebufferStatus(QOpenGLExtraFunctions *gl, GLen
     }
 }
 
-void OpenGL_View::createFBO(int w, int h) {
+void OpenGL_View::resizeFBO(int w, int h) {
     auto gl = getOpenGLExtraFunctions();
     if (gl == nullptr) return;
+    if (w == 0 || h == 0) {
+        destroyFBO();
+        return;
+    }
 
     if (generated) {
         // texture buffers must be destroyed and then recreated in order to be resized
@@ -338,11 +351,8 @@ void OpenGL_View::bindFBO() {
     gl->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 }
 
-void OpenGL_View::drawFBO(GLuint *defaultFBO) {
+void OpenGL_View::drawFBO(int w, int h, GLuint *defaultFBO) {
     auto gl = getOpenGLExtraFunctions();
-
-    int w = getWindowWidth();
-    int h = getWindowHeight();
 
     if (defaultFBO != nullptr) {
         gl->glBindFramebuffer(GL_FRAMEBUFFER, *defaultFBO);
@@ -350,74 +360,71 @@ void OpenGL_View::drawFBO(GLuint *defaultFBO) {
         QOpenGLFramebufferObject::bindDefault();
     }
 
-    QOpenGLShaderProgram program;
+    if (!program.isLinked()) {
+        auto vf = QFile(":/OpenGL Shaders/default_framebuffer_renderer.vsh");
+        vf.open(QFile::OpenModeFlag::ReadOnly);
 
-    auto vf = QFile(":/OpenGL Shaders/default_framebuffer_renderer.vsh");
-    vf.open(QFile::OpenModeFlag::ReadOnly);
+        auto ff = QFile(":/OpenGL Shaders/default_framebuffer_renderer.fsh");
+        ff.open(QFile::OpenModeFlag::ReadOnly);
 
-    auto ff = QFile(":/OpenGL Shaders/default_framebuffer_renderer.fsh");
-    ff.open(QFile::OpenModeFlag::ReadOnly);
+        auto v = vf.readAll();
+        auto f = ff.readAll();
 
-    auto v = vf.readAll();
-    auto f = ff.readAll();
+        vf.close();
+        ff.close();
 
-    vf.close();
-    ff.close();
+        // Any number representing a version of the language a compiler does not support
+        // will cause an error to be generated.
 
-    // Any number representing a version of the language a compiler does not support
-    // will cause an error to be generated.
+        if (getOpenGLContext()->isOpenGLES()) {
+            // android supports OpenGL ES 3.0 since android 4.3 (kitkat)
 
-    if (getOpenGLContext()->isOpenGLES()) {
-        // android supports OpenGL ES 3.0 since android 4.3 (kitkat)
+            // android supports OpenGL ES 3.1 since android 5.0 (lollipop)
+            //  New functionality in OpenGL ES 3.1 includes:
+            //   Compute shaders
+            //   Independent vertex and fragment shaders
+            //   Indirect draw commands
 
-        // android supports OpenGL ES 3.1 since android 5.0 (lollipop)
-        //  New functionality in OpenGL ES 3.1 includes:
-        //   Compute shaders
-        //   Independent vertex and fragment shaders
-        //   Indirect draw commands
+            // android supports OpenGL ES 3.2 since android 6.0 (marshmellow), possibly 7.0 (naugat)
 
-        // android supports OpenGL ES 3.2 since android 6.0 (marshmellow), possibly 7.0 (naugat)
+            // OpenGL ES 3.0 (#version 300 es)
+            // OpenGL ES 3.1 (#version 310 es)
+            // OpenGL ES 3.2 (#version 320 es)
 
-        // OpenGL ES 3.0 (#version 300 es)
-        // OpenGL ES 3.1 (#version 310 es)
-        // OpenGL ES 3.2 (#version 320 es)
-
-        v.prepend(QByteArrayLiteral("#version 300 es\n"));
-        f.prepend(QByteArrayLiteral("#version 300 es\n"));
-    } else {
-        // OpenGL 3.3 (GLSL #version 330)
-        v.prepend(QByteArrayLiteral("#version 330\n"));
-        f.prepend(QByteArrayLiteral("#version 330\n"));
+            v.prepend(QByteArrayLiteral("#version 300 es\n"));
+            f.prepend(QByteArrayLiteral("#version 300 es\n"));
+        } else {
+            // OpenGL 3.3 (GLSL #version 330)
+            v.prepend(QByteArrayLiteral("#version 330\n"));
+            f.prepend(QByteArrayLiteral("#version 330\n"));
+        }
+        if (!program.addShaderFromSourceCode(QOpenGLShader::Vertex, v)) {
+            qFatal("OPENGL SHADER VERTEX SHADER COMPILATION FAILED");
+        }
+        if (!program.addShaderFromSourceCode(QOpenGLShader::Fragment, f)) {
+            qFatal("OPENGL SHADER FRAGMENT SHADER COMPILATION FAILED");
+        }
+        if (!program.link()) {
+            qFatal("OPENGL SHADER LINK FAILED");
+        }
     }
-    if (!program.addShaderFromSourceCode(QOpenGLShader::Vertex, v)) {
-        qFatal("OPENGL SHADER VERTEX SHADER COMPILATION FAILED");
-    }
-    if (!program.addShaderFromSourceCode(QOpenGLShader::Fragment, f)) {
-        qFatal("OPENGL SHADER FRAGMENT SHADER COMPILATION FAILED");
-    }
-    if (!program.link()) {
-        qFatal("OPENGL SHADER LINK FAILED");
-    }
+
     program.bind();
 
-    int offset_x = absoluteCoordinates.rectTopLeft.x();
-    int offset_y = absoluteCoordinates.rectTopLeft.y();
-    int clip_w = absoluteCoordinates.rectBottomRight.x();
-    int clip_h = absoluteCoordinates.rectBottomRight.y();
+    int draw_x = relativeCoordinates.topLeftX;
+    int draw_y = relativeCoordinates.topLeftY;
+    int draw_w = relativeCoordinates.bottomRightX;
+    int draw_h = relativeCoordinates.bottomRightY;
 
     gl->glEnable(GL_SCISSOR_TEST);
-    gl->glScissor(offset_x, offset_y, clip_w, clip_h);
-
-    // draw full screen
-    int offset_w = w + offset_x;
-    int offset_h = h + offset_y;
-
+    gl->glScissor(0, 0, w, h);
+    gl->glViewport(0, 0, w, h);
     pixelToNDC.resize(w, h);
 
-    auto topLeft = pixelToNDC.toNDC<int, float>(offset_x, offset_y, false);
-    auto topRight = pixelToNDC.toNDC<int, float>(offset_w, offset_y, false);
-    auto bottomRight = pixelToNDC.toNDC<int, float>(offset_x, offset_h, false);
-    auto bottomLeft = pixelToNDC.toNDC<int, float>(offset_w, offset_h, false);
+    auto topLeft = pixelToNDC.toNDC<int, float>(draw_x, draw_y, false);
+    auto topRight = pixelToNDC.toNDC<int, float>(draw_w, draw_y, false);
+    auto bottomRight = pixelToNDC.toNDC<int, float>(draw_x, draw_h, false);
+    auto bottomLeft = pixelToNDC.toNDC<int, float>(draw_w, draw_h, false);
 
     float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
      // positions                  // texCoords
@@ -466,7 +473,20 @@ void OpenGL_View::destroyFBO() {
     }
 }
 
-void OpenGL_View::paintGLToFBO(GLuint *defaultFBO) {
+void OpenGL_View::paintGLToFBO(int w, int h, GLuint *defaultFBO) {
+    if (!canDraw) {
+        if (generated) destroyFBO();
+        paintHolder.deallocate();
+        return;
+    }
+    onResizeGL(measuredDimensions);
+    if (!canDraw) {
+        return;
+    }
+    if (paintHolder.paintDeviceOpenGL == nullptr) {
+        canDraw = false;
+        return;
+    }
     bindFBO();
     auto * gl = getOpenGLExtraFunctions();
 
@@ -485,7 +505,7 @@ void OpenGL_View::paintGLToFBO(GLuint *defaultFBO) {
     gl->glEnable(GL_DEPTH_TEST);
     gl->glEnable(GL_BLEND);
     gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    drawFBO(defaultFBO);
+    drawFBO(w, h, defaultFBO);
 }
 
 void OpenGL_View::buildCoordinates(const QRect &relativeCoordinates) {
@@ -493,7 +513,11 @@ void OpenGL_View::buildCoordinates(const QRect &relativeCoordinates) {
     if (parent == nullptr) {
         absoluteCoordinates = this->relativeCoordinates;
     } else {
-        absoluteCoordinates = CoordinateInfo(relativeCoordinates.translated(parent->absoluteCoordinates.rectTopLeft));
+        int atlx = parent->absoluteCoordinates.topLeftX + this->relativeCoordinates.topLeftX;
+        int atly = parent->absoluteCoordinates.topLeftY + this->relativeCoordinates.topLeftY;
+        int abrx = parent->absoluteCoordinates.topLeftX + this->relativeCoordinates.bottomRightX;
+        int abry = parent->absoluteCoordinates.topLeftY + this->relativeCoordinates.bottomRightY;
+        absoluteCoordinates = CoordinateInfo(atlx, atly, abrx, abry);
     }
 }
 

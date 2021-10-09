@@ -46,9 +46,10 @@ class OpenGL_View :
         public PaintHolderOpenGLHelper,
         public WindowDataHelper
 {
-    QSize measuredDimensions;
+    QSize measuredDimensions {-1, -1};
     static constexpr const char * NO_TAG = "<INTERNAL_VIEW__NO_TAG>";
     const char * tag = NO_TAG;
+    bool canDraw = false;
 public:
     void setTag(const char * name);
     const char * getTag();
@@ -185,7 +186,7 @@ public:
 
     void check_glCheckFramebufferStatus(QOpenGLExtraFunctions * gl, GLenum target, const char * tag = nullptr);
 
-    void createFBO(int w, int h);
+    void resizeFBO(int w, int h);
 
     QImage createQImage();
 
@@ -199,14 +200,15 @@ public:
 
     GLuint quadVAO, quadVBO;
     GLuint fbo = 0, fbo_color_texture = 0, fbo_depth_renderbuffer = 0;
+    QOpenGLShaderProgram program;
 
     void bindFBO();
 
-    void drawFBO(GLuint * defaultFBO);
+    void drawFBO(int w, int h, GLuint * defaultFBO);
 
     void destroyFBO();
 
-    void paintGLToFBO(GLuint * defaultFBO);
+    void paintGLToFBO(int w, int h, GLuint * defaultFBO);
 };
 
 template<typename T>

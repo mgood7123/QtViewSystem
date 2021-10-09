@@ -30,6 +30,12 @@ public:
         TYPE y;
         TYPE z;
         Coordinates() {}
+        Coordinates(TYPE x, TYPE y, TYPE z) {
+            this->x = x;
+            this->y = y;
+            this->z = z;
+        }
+
         Coordinates(TYPE TYPE_INITIALIZER) {
             x = TYPE_INITIALIZER;
             y = TYPE_INITIALIZER;

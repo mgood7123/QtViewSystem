@@ -7,6 +7,8 @@
 
 class PaintHolder {
     QSize size = {-1, -1};
+    int width = -1;
+    int height = -1;
 
 public:
 
@@ -19,15 +21,15 @@ public:
 
     QPainter * beginGL();
 
-    void resize(const QSize & size);
+    bool resize(const QSize & size);
 
-    void resize(const int & width, const int & height);
+    bool resize(const int & width, const int & height);
 
     void deallocate();
 
-    void allocate(const QSize & size);
+    bool allocate(const QSize & size);
 
-    void allocate(const int & width, const int & height);
+    bool allocate(const int & width, const int & height);
 
     QSize getSize();
 

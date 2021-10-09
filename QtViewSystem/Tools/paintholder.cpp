@@ -6,16 +6,17 @@ QPainter *PaintHolder::beginGL() {
     return painterGL;
 }
 
-void PaintHolder::resize(const QSize &size) {
-    allocate(size);
+bool PaintHolder::resize(const QSize &size) {
+    return allocate(size);
 }
 
-void PaintHolder::resize(const int &width, const int &height) {
-    allocate(width, height);
+bool PaintHolder::resize(const int &width, const int &height) {
+    return allocate(width, height);
 }
 
 void PaintHolder::deallocate()
 {
+    if (painterGL == nullptr) return;
     delete painterGL;
     painterGL = nullptr;
     glES3Functions = nullptr;
@@ -25,25 +26,27 @@ void PaintHolder::deallocate()
     paintDeviceOpenGL = nullptr;
 }
 
-void PaintHolder::allocate(const QSize &size)
+bool PaintHolder::allocate(const QSize &size)
 {
-    if (this->size != size) {
-        allocate(size.width(), size.height());
-    }
+    return allocate(size.width(), size.height());
 }
 
-void PaintHolder::allocate(const int &width, const int &height)
+bool PaintHolder::allocate(const int &width, const int &height)
 {
-    QSize s = {width, height};
-    if (size != s) {
-        size = s;
+    if (this->width != width || this->height != height) {
+        this->width = width;
+        this->height = height;
+        size = {width, height};
         deallocate();
+        if (width == 0 || height == 0) return false;
         paintDeviceOpenGL = new QOpenGLPaintDevice(width, height);
         painterGL = new QPainter();
         glContext = paintDeviceOpenGL->context();
         glES2Functions = glContext->functions();
         glES3Functions = glContext->extraFunctions();
+        return true;
     }
+    return false;
 }
 
 QSize PaintHolder::getSize() {

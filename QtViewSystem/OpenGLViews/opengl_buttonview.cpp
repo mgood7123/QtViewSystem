@@ -72,6 +72,7 @@ void OpenGL_ButtonView::onPaintGL(QPainter *painter, GLuint *defaultFBO)
         painter_.setFont(f);
         painter_.setPen(textColor);
         painter_.drawText(r, Qt::TextWordWrap | Qt::AlignmentFlag::AlignCenter, text);
+
         painter->drawImage(w, image);
     }
 }

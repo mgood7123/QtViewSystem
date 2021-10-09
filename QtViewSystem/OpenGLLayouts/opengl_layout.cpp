@@ -23,7 +23,6 @@ void OpenGL_Layout::addChild(OpenGL_View *view, LayoutParams * params) {
     view->setLayoutParams(params);
     view->setWindowData(getWindowData());
     view->parent = this;
-    view->onResizeGL(getWindowSize());
     children.append(view);
     view->onAddedToLayout();
 }
@@ -72,18 +71,10 @@ void OpenGL_Layout::removeAllChildren() {
     }
 }
 
-void OpenGL_Layout::onResizeGL(int window_w, int window_h)
-{
-    OpenGL_View::onResizeGL(window_w, window_h);
-    for (OpenGL_View * view: children) {
-        view->onResizeGL(window_w, window_h);
-    }
-}
-
 void OpenGL_Layout::onPaintGL(QPainter * painter, GLuint * defaultFBO)
 {
     for (OpenGL_View * view: children) {
-        view->paintGLToFBO(defaultFBO);
+        view->paintGLToFBO(getWindowWidth(), getWindowHeight(), defaultFBO);
     }
 }
 

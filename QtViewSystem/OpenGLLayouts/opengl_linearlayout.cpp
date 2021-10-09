@@ -2,6 +2,11 @@
 
 void OpenGL_LinearLayout::onMeasure(int width, int height)
 {
+    if (width == 0 || height == 0) {
+        setMeasuredDimensions(0, 0);
+        return;
+    }
+
     // for a linear layout, we divide the size by the children count
 
     //23:16:40 Roughy: layout_weight is basically just the normalized weight * view size, except the weights kinda work in reverse so if you have 1.0 and 2.0 the 1.0 will take up 2/3rds'ish instead of the more logical opposite, if I Recall correctly
@@ -47,6 +52,8 @@ void OpenGL_LinearLayout::onMeasure(int width, int height)
                 drawPosition.translate(prevSection, 0);
                 drawPosition.setWidth(drawPosition.width() + section);
             }
+            view->buildCoordinates(drawPosition);
+            view->measure(section, height);
         } else {
             section = multiplier * height;
             if (first) {
@@ -57,9 +64,9 @@ void OpenGL_LinearLayout::onMeasure(int width, int height)
                 drawPosition.translate(0, prevSection);
                 drawPosition.setHeight(drawPosition.height() + section);
             }
+            view->buildCoordinates(drawPosition);
+            view->measure(width, section);
         }
-        view->buildCoordinates(drawPosition);
-        view->measure(drawPosition.width(), drawPosition.height());
     }
     setMeasuredDimensions(width, height);
 }
