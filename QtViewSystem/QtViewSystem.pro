@@ -13,6 +13,7 @@ SOURCES += \
     Helpers/PaintHolderOpenGLHelper.cpp \
     Helpers/PropertyAnimatorHelper.cpp \
     Helpers/WindowDataHelper.cpp \
+    OpenGLLayouts/opengl_framespersecondlayout.cpp \
     OpenGLLayouts/opengl_layerlayout.cpp \
     OpenGLLayouts/opengl_layout.cpp \
     OpenGLLayouts/opengl_linearlayout.cpp \
@@ -23,6 +24,7 @@ SOURCES += \
     QtViewSystemManual/QtViewSystemManualView.cpp \
     Tools/PixelToNDC.cpp \
     Tools/TimeEngine.cpp \
+    Tools/lambdathread.cpp \
     Tools/paintholder.cpp \
     main.cpp \
     qtopenglviewsystem.cpp \
@@ -33,6 +35,7 @@ HEADERS += \
     Helpers/PaintHolderOpenGLHelper.h \
     Helpers/PropertyAnimatorHelper.h \
     Helpers/WindowDataHelper.h \
+    OpenGLLayouts/opengl_framespersecondlayout.h \
     OpenGLLayouts/opengl_layerlayout.h \
     OpenGLLayouts/opengl_layout.h \
     OpenGLLayouts/opengl_linearlayout.h \
@@ -45,6 +48,7 @@ HEADERS += \
     Tools/TimeEngine.h \
     Tools/TypeSafeKeyValuePropertyAnimators.h \
     Tools/TypeSafePropertyAnimators.h \
+    Tools/lambdathread.h \
     Tools/paintholder.h \
     qtopenglviewsystem.h \
     qtopenglviewsystemwindowdata.h

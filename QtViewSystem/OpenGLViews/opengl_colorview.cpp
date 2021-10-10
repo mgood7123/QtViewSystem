@@ -29,6 +29,8 @@ OpenGL_ColorView::OpenGL_ColorView(QColor color)
 void OpenGL_ColorView::onPaintGL(QPainter *painter, GLuint *defaultFBO)
 {
     auto * gl = getOpenGLExtraFunctions();
+//    painter->fillRect(painter->window(), color);
+//    painter->drawImage(painter->window(), createQImage(color));
     painter->beginNativePainting();
     gl->glClearColor(color.redF(), color.greenF(), color.blueF(), color.alphaF());
     gl->glClear(GL_COLOR_BUFFER_BIT);

@@ -19,7 +19,7 @@ public:
     void removeAllChildren();
 
     // OpenGLView interface
-private:
+protected:
     virtual void onPaintGL(QPainter * painter, GLuint * defaultFBO) override;
 public:
     virtual bool isLayout() const override final;

@@ -13,6 +13,16 @@ OpenGL_View::~OpenGL_View() {
     destroyFBO();
 }
 
+OpenGL_View::VISIBILITY OpenGL_View::getVisibility() const
+{
+    return visibility;
+}
+
+void OpenGL_View::setVisibility(VISIBILITY newVisibility)
+{
+    visibility = newVisibility;
+}
+
 void OpenGL_View::setTag(const char *name) {
     tag = name;
 }
@@ -71,6 +81,7 @@ void OpenGL_View::setLayoutParams(LayoutParams *params) {
 
 void OpenGL_View::measure(int width, int height)
 {
+    if (visibility == GONE) return;
     measuredDimensions = INVALID_MEASUREMENT_DIMENSION;
     onMeasure(width, height);
     if (measuredDimensions == INVALID_MEASUREMENT_DIMENSION) {
@@ -326,21 +337,46 @@ QImage OpenGL_View::createQImage() {
 }
 
 QImage OpenGL_View::createQImage(uint pixel) {
-    QImage image(paintHolder.getSize(), QImage::Format_ARGB32);
+    QImage image(paintHolder.getSize(), QImage::Format_RGBA8888);
     // initialize QImage to transparent
     image.fill(pixel);
     return image;
 }
 
 QImage OpenGL_View::createQImage(const QColor &color) {
-    QImage image(paintHolder.getSize(), QImage::Format_ARGB32);
+    QImage image(paintHolder.getSize(), QImage::Format_RGBA8888);
     // initialize QImage to transparent
     image.fill(color);
     return image;
 }
 
 QImage OpenGL_View::createQImage(Qt::GlobalColor color) {
-    QImage image(paintHolder.getSize(), QImage::Format_ARGB32);
+    QImage image(paintHolder.getSize(), QImage::Format_RGBA8888);
+    // initialize QImage to transparent
+    image.fill(color);
+    return image;
+}
+
+QPixmap OpenGL_View::createQPixmap() {
+    return createQPixmap(Qt::transparent);
+}
+
+QPixmap OpenGL_View::createQPixmap(uint pixel) {
+    QPixmap image(paintHolder.getSize());
+    // initialize QImage to transparent
+    image.fill(pixel);
+    return image;
+}
+
+QPixmap OpenGL_View::createQPixmap(const QColor &color) {
+    QPixmap image(paintHolder.getSize());
+    // initialize QImage to transparent
+    image.fill(color);
+    return image;
+}
+
+QPixmap OpenGL_View::createQPixmap(Qt::GlobalColor color) {
+    QPixmap image(paintHolder.getSize());
     // initialize QImage to transparent
     image.fill(color);
     return image;
@@ -474,6 +510,13 @@ void OpenGL_View::destroyFBO() {
 }
 
 void OpenGL_View::paintGLToFBO(int w, int h, GLuint *defaultFBO) {
+    switch (visibility) {
+        case OpenGL_View::VISIBLE:
+            break;
+        case OpenGL_View::INVISIBLE:
+        case OpenGL_View::GONE:
+            return;
+    }
     if (!canDraw) {
         if (generated) destroyFBO();
         paintHolder.deallocate();

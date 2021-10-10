@@ -1,35 +1,5 @@
 #include "opengl_textview.h"
 
-const QString &OpenGL_TextView::getText() const
-{
-    return text;
-}
-
-void OpenGL_TextView::setText(const QString &newText)
-{
-    text = newText;
-}
-
-int OpenGL_TextView::getTextSize() const
-{
-    return textSize;
-}
-
-void OpenGL_TextView::setTextSize(int newTextSize)
-{
-    textSize = newTextSize;
-}
-
-const QColor &OpenGL_TextView::getTextColor() const
-{
-    return textColor;
-}
-
-void OpenGL_TextView::setTextColor(const QColor &newTextColor)
-{
-    textColor = newTextColor;
-}
-
 OpenGL_TextView::OpenGL_TextView() : OpenGL_TextView(13) {}
 
 OpenGL_TextView::OpenGL_TextView(const QString &text) : OpenGL_TextView(text, 13) {}
@@ -80,4 +50,34 @@ void OpenGL_TextView::onPaintGL(QPainter * painter, GLuint *defaultFBO)
 
     painter_.drawText(w, Qt::TextWordWrap | alignment, text);
     painter->drawImage(w, image);
+}
+
+const QString &OpenGL_TextView::getText() const
+{
+    return text;
+}
+
+void OpenGL_TextView::setText(const QString &newText)
+{
+    text = newText;
+}
+
+int OpenGL_TextView::getTextSize() const
+{
+    return textSize;
+}
+
+void OpenGL_TextView::setTextSize(int newTextSize)
+{
+    textSize = newTextSize;
+}
+
+const QColor &OpenGL_TextView::getTextColor() const
+{
+    return textColor;
+}
+
+void OpenGL_TextView::setTextColor(const QColor &newTextColor)
+{
+    textColor = newTextColor;
 }

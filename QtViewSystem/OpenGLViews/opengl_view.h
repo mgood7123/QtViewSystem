@@ -1,6 +1,7 @@
 #ifndef OPENGL_VIEW_H
 #define OPENGL_VIEW_H
 
+#include <QBasicTimer>
 #include <QDebug>
 #include <QDir>
 #include <QDirIterator>
@@ -8,6 +9,7 @@
 #include <QImage>
 #include <QImageReader>
 #include <QImageWriter>
+#include <QTimer>
 
 // OpenGL
 #include <QOpenGLContext>
@@ -24,6 +26,7 @@
 #include <QOpenGLShader>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLTexture>
+#include <QThread>
 
 
 #include <qtopenglviewsystemwindowdata.h>
@@ -39,6 +42,7 @@
 #include <Tools/PixelToNDC.h>
 #include <Tools/TimeEngine.h>
 #include <Tools/paintholder.h>
+#include <Tools/lambdathread.h>
 #include <QPainterPath>
 
 class OpenGL_View :
@@ -46,11 +50,18 @@ class OpenGL_View :
         public PaintHolderOpenGLHelper,
         public WindowDataHelper
 {
+public:
+    enum VISIBILITY {
+        VISIBLE, INVISIBLE, GONE
+    };
+private:
     QSize measuredDimensions {-1, -1};
     static constexpr const char * NO_TAG = "<INTERNAL_VIEW__NO_TAG>";
     const char * tag = NO_TAG;
     bool canDraw = false;
+    VISIBILITY visibility = VISIBLE;
 public:
+
     void setTag(const char * name);
     const char * getTag();
 
@@ -125,6 +136,7 @@ public:
 private:
     LayoutParams * layoutParams = nullptr;
 
+protected:
     virtual void onPaintGL(QPainter * painter, GLuint *defaultFBO);
 
 public:
@@ -196,6 +208,14 @@ public:
 
     QImage createQImage(Qt::GlobalColor color);
 
+    QPixmap createQPixmap();
+
+    QPixmap createQPixmap(uint pixel);
+
+    QPixmap createQPixmap(const QColor &color);
+
+    QPixmap createQPixmap(Qt::GlobalColor color);
+
     bool generated = false;
 
     GLuint quadVAO, quadVBO;
@@ -208,7 +228,9 @@ public:
 
     void destroyFBO();
 
-    void paintGLToFBO(int w, int h, GLuint * defaultFBO);
+    virtual void paintGLToFBO(int w, int h, GLuint * defaultFBO);
+    VISIBILITY getVisibility() const;
+    void setVisibility(VISIBILITY newVisibility);
 };
 
 template<typename T>

@@ -13,6 +13,7 @@
 #include "OpenGLLayouts/opengl_layout.h"
 #include "OpenGLLayouts/opengl_layerlayout.h"
 #include "OpenGLLayouts/opengl_linearlayout.h"
+#include "OpenGLLayouts/opengl_framespersecondlayout.h"
 
 #include "QtViewSystemManual/QtViewSystemManualView.h"
 

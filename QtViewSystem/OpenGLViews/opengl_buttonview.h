@@ -9,6 +9,8 @@ protected:
     QString text;
     int textSize;
     QColor textColor;
+    LambdaThreadHelper work;
+    QImage image;
 public:
 
     OpenGL_ButtonView();
