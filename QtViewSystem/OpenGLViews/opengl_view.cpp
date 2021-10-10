@@ -23,11 +23,26 @@ void OpenGL_View::setVisibility(VISIBILITY newVisibility)
     visibility = newVisibility;
 }
 
-void OpenGL_View::setTag(const char *name) {
+bool OpenGL_View::setAlwaysDraw(bool enabled) {
+    alwaysDraw = enabled;
+}
+
+bool OpenGL_View::getAlwaysDraw() const {
+    return alwaysDraw;
+}
+
+void OpenGL_View::invalidate() {
+    invalidated = true;
+    if (parent != nullptr) {
+        parent->invalidate();
+    }
+}
+
+void OpenGL_View::setTag(const QString & name) {
     tag = name;
 }
 
-const char * OpenGL_View::getTag() {
+QString OpenGL_View::getTag() const {
     return tag;
 }
 
@@ -82,9 +97,9 @@ void OpenGL_View::setLayoutParams(LayoutParams *params) {
 void OpenGL_View::measure(int width, int height)
 {
     if (visibility == GONE) return;
-    measuredDimensions = INVALID_MEASUREMENT_DIMENSION;
+    calledSetMeasuredDimensions = false;
     onMeasure(width, height);
-    if (measuredDimensions == INVALID_MEASUREMENT_DIMENSION) {
+    if (!calledSetMeasuredDimensions) {
         qFatal("invalid measurement, did you forget to call `setMeasuredDimensions(const QSize &);` ?");
     }
 }
@@ -96,8 +111,12 @@ void OpenGL_View::setMeasuredDimensions(int width, int height)
 
 void OpenGL_View::setMeasuredDimensions(const QSize &size)
 {
+    calledSetMeasuredDimensions = true;
     canDraw = !size.isEmpty();
-    measuredDimensions = size;
+    if (measuredDimensions != size) {
+        measuredDimensions = size;
+        invalidate();
+    }
 }
 
 QSize OpenGL_View::getMeasuredDimensions()
@@ -145,7 +164,7 @@ void OpenGL_View::onResizeGL(int window_w, int window_h) {
             resizeFBO(window_w, window_h);
         }
     } else {
-        if (generated) destroyFBO();
+        if (fboGenerated) destroyFBO();
     }
 }
 
@@ -280,14 +299,23 @@ void OpenGL_View::check_glCheckFramebufferStatus(QOpenGLExtraFunctions *gl, GLen
 }
 
 void OpenGL_View::resizeFBO(int w, int h) {
-    auto gl = getOpenGLExtraFunctions();
-    if (gl == nullptr) return;
+    if (fboWidth == w && fboHeight == h) return;
+    fboWidth = w;
+    fboHeight = h;
     if (w == 0 || h == 0) {
         destroyFBO();
         return;
     }
 
-    if (generated) {
+    auto gl = getOpenGLExtraFunctions();
+    if (gl == nullptr) {
+        qWarning("resizing fbo to valid size but gl is not yet initialized");
+        return;
+    }
+
+    invalidate();
+
+    if (fboGenerated) {
         // texture buffers must be destroyed and then recreated in order to be resized
         // ONLY if they are immutable storage (glTexStorage*)
         // use glTexImage instead to avoid recreating
@@ -297,7 +325,7 @@ void OpenGL_View::resizeFBO(int w, int h) {
         gl->glGenTextures(1, &fbo_color_texture);
         gl->glGenRenderbuffers(1, &fbo_depth_renderbuffer);
         gl->glGenFramebuffers(1, &fbo);
-        generated = true;
+        fboGenerated = true;
     }
 
     // color
@@ -325,11 +353,6 @@ void OpenGL_View::resizeFBO(int w, int h) {
     gl->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo_color_texture, 0);
     gl->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fbo_depth_renderbuffer);
     check_glCheckFramebufferStatus(gl, GL_FRAMEBUFFER, "FBO");
-
-    // clear the FBO to transparent
-    gl->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    gl->glClearColor(0, 0, 0, 0);
-    gl->glClear(GL_COLOR_BUFFER_BIT);
 }
 
 QImage OpenGL_View::createQImage() {
@@ -506,11 +529,11 @@ void OpenGL_View::destroyFBO() {
     auto gl = getOpenGLExtraFunctions();
     if (gl == nullptr) return;
 
-    if (generated) {
+    if (fboGenerated) {
         gl->glDeleteTextures(1, &fbo_color_texture);
         gl->glDeleteRenderbuffers(1, &fbo_depth_renderbuffer);
         gl->glDeleteFramebuffers(1, &fbo);
-        generated = false;
+        fboGenerated = false;
     }
 }
 
@@ -523,37 +546,47 @@ void OpenGL_View::paintGLToFBO(int w, int h, GLuint *defaultFBO) {
             return;
     }
     if (!canDraw) {
-        if (generated) destroyFBO();
+        if (fboGenerated) destroyFBO();
         paintHolder.deallocate();
         return;
     }
     onResizeGL(measuredDimensions);
-    if (!canDraw) {
-        return;
-    }
-    if (paintHolder.paintDeviceOpenGL == nullptr) {
+    if (!canDraw || paintHolder.paintDeviceOpenGL == nullptr) {
         canDraw = false;
         return;
     }
     bindFBO();
     auto * gl = getOpenGLExtraFunctions();
+    if (alwaysDraw || invalidated) {
+        // clear texture to transparent
+        gl->glClearColor(0, 0, 0, 0);
+        gl->glClear(GL_COLOR_BUFFER_BIT);
 
-    // clear FBO to transparent
-    gl->glClearColor(0, 0, 0, 0);
-    gl->glClear(GL_COLOR_BUFFER_BIT);
+        // set texture erased flag
+        erased_texture = true;
 
-    gl->glEnable(GL_DEPTH_TEST);
-    gl->glEnable(GL_BLEND);
-    gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        gl->glEnable(GL_DEPTH_TEST);
+        gl->glEnable(GL_BLEND);
+        gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    auto * painterGL = paintHolder.beginGL();
-    onPaintGL(painterGL, &fbo);
-    painterGL->end();
+        // here we paint children if needed
+        auto * painterGL = paintHolder.beginGL();
+        onPaintGL(painterGL, &fbo);
+        painterGL->end();
+        invalidated = false;
 
-    gl->glEnable(GL_DEPTH_TEST);
-    gl->glEnable(GL_BLEND);
-    gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    drawFBO(w, h, defaultFBO);
+        // clear flag
+        erased_texture = false;
+    }
+
+    if (parent == nullptr || parent->erased_texture) {
+        gl->glEnable(GL_DEPTH_TEST);
+        gl->glEnable(GL_BLEND);
+        gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        drawFBO(w, h, defaultFBO);
+    } else {
+        qDebug() << "parent != nullptr && !parent->erased_texture, not drawing FBO for" << tag;
+    }
 }
 
 void OpenGL_View::buildCoordinates(const QRect &relativeCoordinates) {

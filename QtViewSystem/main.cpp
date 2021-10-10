@@ -5,17 +5,20 @@ int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
     QScopedPointer<QtOpenGLViewSystem> glWindow(new QtOpenGLViewSystem());
-    glWindow->showFullScreen();
+    glWindow->show();
 
     auto * layer = new OpenGL_FramesPerSecondLayout();
+    layer->setTag("layer");
     auto * layout_1 = new OpenGL_LinearLayout();
+    layout_1->setTag("layout_1");
     layer->addChild(layout_1);
-    layout_1->setVisibility(OpenGL_View::VISIBLE);
-    for (int i = 0; i < 20; i++) {
-//        layout_1->addChild(new OpenGL_ColorView(Qt::GlobalColor::darkBlue));
-//        layout_1->addChild(new OpenGL_TextView(QString("Button ") + QString::number(i+1), 20, Qt::green));
-        layout_1->addChild(new OpenGL_ButtonView(QString("Button ") + QString::number(i+1), 20, Qt::green));
+    for (int i = 0; i < 800; i++) {
+        QString t = QString("Button ") + QString::number(i+1);
+        auto * b = new OpenGL_ButtonView(t, 20, Qt::green);
+        b->setTag(t);
+        layout_1->addChild(b);
     }
+
     glWindow->setContentView(layer);
 
     return QGuiApplication::exec();

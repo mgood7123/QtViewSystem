@@ -7,7 +7,9 @@ OpenGL_FramesPerSecondLayout::OpenGL_FramesPerSecondLayout(const int &textSize) 
 
 OpenGL_FramesPerSecondLayout::OpenGL_FramesPerSecondLayout(const QColor &textColor) : OpenGL_FramesPerSecondLayout(13, textColor) {}
 
-OpenGL_FramesPerSecondLayout::OpenGL_FramesPerSecondLayout(const int &textSize, const QColor &textColor) : textSize(textSize), textColor(textColor) {}
+OpenGL_FramesPerSecondLayout::OpenGL_FramesPerSecondLayout(const int &textSize, const QColor &textColor) : textSize(textSize), textColor(textColor) {
+    setAlwaysDraw(true);
+}
 
 int OpenGL_FramesPerSecondLayout::getTextSize() const
 {

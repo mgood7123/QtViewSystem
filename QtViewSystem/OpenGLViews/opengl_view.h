@@ -67,46 +67,6 @@ public:
     enum VISIBILITY {
         VISIBLE, INVISIBLE, GONE
     };
-private:
-    QSize measuredDimensions {-1, -1};
-    static constexpr const char * NO_TAG = "<INTERNAL_VIEW__NO_TAG>";
-    const char * tag = NO_TAG;
-    bool canDraw = false;
-    VISIBILITY visibility = VISIBLE;
-public:
-
-    void setTag(const char * name);
-    const char * getTag();
-
-protected:
-QParallelAnimationGroup animationGroup;
-public:
-
-    QSequentialAnimationGroup * getSequentialAnimationGroup();
-
-    QParallelAnimationGroup * getParallelAnimationGroup();
-
-    void addAnimation(QAbstractAnimation * animation);
-
-    void removeAnimation(QAbstractAnimation * animation);
-
-    void startAnimation(QAbstractAnimation::DeletionPolicy policy = QAbstractAnimation::DeletionPolicy::KeepWhenStopped);
-
-    void pauseAnimation();
-
-    void stopAnimation();
-
-    TimeEngine timeEngine;
-
-    QSize getWindowSize();
-
-    int getWindowWidth();
-
-    int getWindowHeight();
-
-    OpenGL_View();
-
-    virtual ~OpenGL_View();
 
     enum MeasureSpec {
         MATCH_PARENT = -1,
@@ -145,9 +105,62 @@ public:
 
         virtual ~LayoutParams() = default;
     };
-
 private:
+    QSize measuredDimensions {0, 0};
+    bool calledSetMeasuredDimensions = false;
+    static constexpr const char * NO_TAG = "<INTERNAL_VIEW__NO_TAG>";
+    QString tag = NO_TAG;
+    bool canDraw = false;
+    VISIBILITY visibility = VISIBLE;
+    bool invalidated = true;
+    bool fboGenerated = false;
+    GLuint quadVAO = 0, quadVBO = 0;
+    GLuint fbo = 0, fbo_color_texture = 0, fbo_depth_renderbuffer = 0;
+    int fboWidth = 0, fboHeight = 0;
+    QOpenGLShaderProgram program;
     LayoutParams * layoutParams = nullptr;
+    bool alwaysDraw = false;
+    bool erased_texture = false;
+public:
+
+    bool setAlwaysDraw(bool enabled);
+
+    bool getAlwaysDraw() const;
+
+    void invalidate();
+
+    void setTag(const QString & name);
+    QString getTag() const;
+
+protected:
+QParallelAnimationGroup animationGroup;
+public:
+
+    QSequentialAnimationGroup * getSequentialAnimationGroup();
+
+    QParallelAnimationGroup * getParallelAnimationGroup();
+
+    void addAnimation(QAbstractAnimation * animation);
+
+    void removeAnimation(QAbstractAnimation * animation);
+
+    void startAnimation(QAbstractAnimation::DeletionPolicy policy = QAbstractAnimation::DeletionPolicy::KeepWhenStopped);
+
+    void pauseAnimation();
+
+    void stopAnimation();
+
+    TimeEngine timeEngine;
+
+    QSize getWindowSize();
+
+    int getWindowWidth();
+
+    int getWindowHeight();
+
+    OpenGL_View();
+
+    virtual ~OpenGL_View();
 
 protected:
     virtual void onPaintGL(QPainter * painter, GLuint *defaultFBO);
@@ -177,8 +190,6 @@ public:
     void setLayoutParams(LayoutParams *params);
 
     constexpr static QSize INVALID_MEASUREMENT_DIMENSION = {-1, -1};
-    QRect layoutData;
-    QRect cache_layoutData;
 
     void setMeasuredDimensions(int width, int height);
     void setMeasuredDimensions(const QSize & size);
@@ -228,12 +239,6 @@ public:
     QImage createQImage(const QImage & comparisonImage, const QColor &color);
 
     QImage createQImage(const QImage & comparisonImage, Qt::GlobalColor color);
-
-    bool generated = false;
-
-    GLuint quadVAO, quadVBO;
-    GLuint fbo = 0, fbo_color_texture = 0, fbo_depth_renderbuffer = 0;
-    QOpenGLShaderProgram program;
 
     void bindFBO();
 
