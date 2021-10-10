@@ -45,6 +45,17 @@
 #include <Tools/lambdathread.h>
 #include <QPainterPath>
 
+
+
+// SUPER IMPORTANT: INVALIDATE YOUR VIEWS!!!!!!!!!
+//
+// android gets around the problem of exxessive overdraw via view invalidation
+//   - it will ONLY draw view's that have been explicitly invalidated
+//     to avoid redrawing the same view hundreds of times even if nothing
+//     at all has changed
+
+
+
 class OpenGL_View :
         public CoordinateHelper,
         public PaintHolderOpenGLHelper,
