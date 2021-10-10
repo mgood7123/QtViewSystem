@@ -5,7 +5,7 @@ int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
     QScopedPointer<QtOpenGLViewSystem> glWindow(new QtOpenGLViewSystem());
-    glWindow->show();
+    glWindow->showFullScreen();
 
     auto * layer = new OpenGL_FramesPerSecondLayout();
     auto * layout_1 = new OpenGL_LinearLayout();

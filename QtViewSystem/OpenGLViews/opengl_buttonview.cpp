@@ -53,24 +53,28 @@ void OpenGL_ButtonView::onPaintGL(QPainter *painter, GLuint *defaultFBO)
     QRect w = painter->window();
     QRect r = w.adjusted(a, a, -a, -a);
     if (r.isValid()) {
-        image = createQImage(image);
-        auto painter_ = QPainter(&image);
-        painter_.setRenderHint(QPainter::Antialiasing, true);
-        painter_.setRenderHint(QPainter::SmoothPixmapTransform, true);
-        QPainterPath path;
-        path.addRoundedRect(QRectF(w), radius, radius);
-        QPen pen(Qt::green, radius);
-        painter_.setPen(pen);
-        painter_.fillPath(path, QColor("#404040"));
-        auto c = painter_.compositionMode();
-        painter_.setCompositionMode(QPainter::CompositionMode_Clear);
-        painter_.drawPath(path);
-        painter_.setCompositionMode(c);
-        QFont f = painter_.font();
-        f.setPixelSize(applyDpiScale(textSize));
-        painter_.setFont(f);
-        painter_.setPen(textColor);
-        painter_.drawText(r, Qt::TextWordWrap | Qt::AlignmentFlag::AlignCenter, text);
-        painter->drawImage(w, image);
+        if (image.isNull() || lastW != w) {
+            lastW = w;
+            image = createQImage();
+            auto painter_ = QPainter(&image);
+            painter_.setRenderHint(QPainter::Antialiasing, true);
+            painter_.setRenderHint(QPainter::SmoothPixmapTransform, true);
+            QPainterPath path;
+            path.addRoundedRect(QRectF(w), radius, radius);
+            QPen pen(Qt::green, radius);
+            painter_.setPen(pen);
+            painter_.fillPath(path, QColor("#404040"));
+            auto c = painter_.compositionMode();
+            painter_.setCompositionMode(QPainter::CompositionMode_Clear);
+            painter_.drawPath(path);
+            painter_.setCompositionMode(c);
+            QFont f = painter_.font();
+            f.setPixelSize(applyDpiScale(textSize));
+            painter_.setFont(f);
+            painter_.setPen(textColor);
+            painter_.drawText(r, Qt::TextWordWrap | Qt::AlignmentFlag::AlignCenter, text);
+            painter_.end();
+        }
+        painter->drawImage(0, 0, image);
     }
 }

@@ -9,6 +9,8 @@ protected:
     QString text;
     int textSize;
     QColor textColor;
+    QPicture recording;
+    QRect lastW;
     QImage image;
 public:
 

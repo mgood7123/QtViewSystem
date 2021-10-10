@@ -10,6 +10,10 @@
 #include <QImageReader>
 #include <QImageWriter>
 #include <QTimer>
+#include <QPainter>
+#include <QPainterPath>
+#include <QPicture>
+#include <QBitmap>
 
 // OpenGL
 #include <QOpenGLContext>
@@ -43,8 +47,6 @@
 #include <Tools/TimeEngine.h>
 #include <Tools/paintholder.h>
 #include <Tools/lambdathread.h>
-#include <QPainterPath>
-
 
 
 // SUPER IMPORTANT: INVALIDATE YOUR VIEWS!!!!!!!!!
