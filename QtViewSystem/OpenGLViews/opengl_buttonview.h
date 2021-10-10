@@ -9,7 +9,6 @@ protected:
     QString text;
     int textSize;
     QColor textColor;
-    LambdaThreadHelper work;
     QImage image;
 public:
 
@@ -31,7 +30,7 @@ public:
     const QColor &getTextColor() const;
     void setTextColor(const QColor &newTextColor);
 
-    // OpenGL_View interface
+    // OpenGL_View interface // gets called from QOpenGLWindow
 private:
     virtual void onPaintGL(QPainter *painter, GLuint *defaultFBO) override;
 };

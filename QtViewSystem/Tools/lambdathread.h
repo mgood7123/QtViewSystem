@@ -1,6 +1,7 @@
 #ifndef LAMBDATHREAD_H
 #define LAMBDATHREAD_H
 
+#include <QOpenGLContext>
 #include <QThread>
 
 class LambdaThread : public QThread
@@ -21,6 +22,7 @@ public:
 class LambdaThreadHelper : public QObject {
     std::function<void()> func;
     LambdaThread * workerThread = nullptr;
+    QOpenGLContext * context = nullptr;
     bool started = false;
     bool finished = false;
     bool terminated = true;
@@ -31,6 +33,7 @@ public:
     QThread * threadGetThread();
     void threadCreate();
     void threadCreate(const std::function<void()> & func);
+    void threadCreate(QOpenGLContext * context, const std::function<void()> & func);
     void threadDestroy();
     void threadWaitForFinish();
     bool threadExists();

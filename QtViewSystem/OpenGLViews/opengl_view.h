@@ -208,13 +208,13 @@ public:
 
     QImage createQImage(Qt::GlobalColor color);
 
-    QPixmap createQPixmap();
+    QImage createQImage(const QImage & comparisonImage);
 
-    QPixmap createQPixmap(uint pixel);
+    QImage createQImage(const QImage & comparisonImage, uint pixel);
 
-    QPixmap createQPixmap(const QColor &color);
+    QImage createQImage(const QImage & comparisonImage, const QColor &color);
 
-    QPixmap createQPixmap(Qt::GlobalColor color);
+    QImage createQImage(const QImage & comparisonImage, Qt::GlobalColor color);
 
     bool generated = false;
 

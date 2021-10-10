@@ -357,26 +357,32 @@ QImage OpenGL_View::createQImage(Qt::GlobalColor color) {
     return image;
 }
 
-QPixmap OpenGL_View::createQPixmap() {
-    return createQPixmap(Qt::transparent);
+QImage OpenGL_View::createQImage(const QImage & comparisonImage) {
+    return createQImage(comparisonImage, Qt::transparent);
 }
 
-QPixmap OpenGL_View::createQPixmap(uint pixel) {
-    QPixmap image(paintHolder.getSize());
+QImage OpenGL_View::createQImage(const QImage & comparisonImage, uint pixel) {
+    auto s = paintHolder.getSize();
+    if (s.isNull() || comparisonImage.size() == s) return comparisonImage;
+    QImage image(s, QImage::Format_RGBA8888);
     // initialize QImage to transparent
     image.fill(pixel);
     return image;
 }
 
-QPixmap OpenGL_View::createQPixmap(const QColor &color) {
-    QPixmap image(paintHolder.getSize());
+QImage OpenGL_View::createQImage(const QImage & comparisonImage, const QColor &color) {
+    auto s = paintHolder.getSize();
+    if (s.isNull() || comparisonImage.size() == s) return comparisonImage;
+    QImage image(s, QImage::Format_RGBA8888);
     // initialize QImage to transparent
     image.fill(color);
     return image;
 }
 
-QPixmap OpenGL_View::createQPixmap(Qt::GlobalColor color) {
-    QPixmap image(paintHolder.getSize());
+QImage OpenGL_View::createQImage(const QImage & comparisonImage, Qt::GlobalColor color) {
+    auto s = paintHolder.getSize();
+    if (s.isNull() || comparisonImage.size() == s) return comparisonImage;
+    QImage image(s, QImage::Format_RGBA8888);
     // initialize QImage to transparent
     image.fill(color);
     return image;
@@ -504,7 +510,6 @@ void OpenGL_View::destroyFBO() {
         gl->glDeleteTextures(1, &fbo_color_texture);
         gl->glDeleteRenderbuffers(1, &fbo_depth_renderbuffer);
         gl->glDeleteFramebuffers(1, &fbo);
-
         generated = false;
     }
 }
