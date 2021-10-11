@@ -123,7 +123,7 @@ private:
     bool erased_texture = false;
 public:
 
-    bool setAlwaysDraw(bool enabled);
+    void setAlwaysDraw(bool enabled);
 
     bool getAlwaysDraw() const;
 
@@ -157,8 +157,6 @@ public:
     int getWindowWidth();
 
     int getWindowHeight();
-
-    OpenGL_View();
 
     virtual ~OpenGL_View();
 

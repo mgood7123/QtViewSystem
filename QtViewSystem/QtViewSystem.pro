@@ -1,8 +1,18 @@
-QT       += opengl
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT += opengl
 
 CONFIG += c++11
+CONFIG += warn_on
+QMAKE_CXXFLAGS += "-Wreturn-type"
+QMAKE_CFLAGS += "-Wreturn-type"
+
+# sanitizer slows down execution
+#CONFIG += sanitizer
+#CONFIG += sanitize_address
+# clang++: error: invalid argument '-fsanitize=address' not allowed with '-fsanitize=memory'
+#CONFIG += sanitize_memory
+# clang++: error: invalid argument '-fsanitize=address' not allowed with '-fsanitize=thread'
+#CONFIG += sanitize_thread
+#CONFIG += sanitize_undefined
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.

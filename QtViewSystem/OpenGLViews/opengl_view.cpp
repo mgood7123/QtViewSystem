@@ -6,8 +6,6 @@ int OpenGL_View::getWindowWidth() { return getWindowSize().width(); }
 
 int OpenGL_View::getWindowHeight() { return getWindowSize().height(); }
 
-OpenGL_View::OpenGL_View() {}
-
 OpenGL_View::~OpenGL_View() {
     delete layoutParams;
     destroyFBO();
@@ -23,7 +21,7 @@ void OpenGL_View::setVisibility(VISIBILITY newVisibility)
     visibility = newVisibility;
 }
 
-bool OpenGL_View::setAlwaysDraw(bool enabled) {
+void OpenGL_View::setAlwaysDraw(bool enabled) {
     alwaysDraw = enabled;
 }
 
@@ -585,7 +583,7 @@ void OpenGL_View::paintGLToFBO(int w, int h, GLuint *defaultFBO) {
         gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         drawFBO(w, h, defaultFBO);
     } else {
-        qDebug() << "parent != nullptr && !parent->erased_texture, not drawing FBO for" << tag;
+        qWarning() << "parent != nullptr && !parent->erased_texture, not drawing FBO for" << tag;
     }
 }
 

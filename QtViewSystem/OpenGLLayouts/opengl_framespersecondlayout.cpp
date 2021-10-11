@@ -101,8 +101,10 @@ void OpenGL_FramesPerSecondLayout::elapsedTime() {
 
 void OpenGL_FramesPerSecondLayout::paintGLToFBO(int w, int h, GLuint *defaultFBO)
 {
-    if (!started) {
+    // reset the timer every 30 seconds to avoid drift
+    if (!started || elapsed >= 30) {
         resetElapsedTime();
+        frames = 0;
         started = true;
     } else {
         currentElapsedTimeLastFrame = currentElapsedTime;
