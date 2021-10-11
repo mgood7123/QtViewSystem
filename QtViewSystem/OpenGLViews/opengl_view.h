@@ -57,8 +57,6 @@
 //     to avoid redrawing the same view hundreds of times even if nothing
 //     at all has changed
 
-
-
 class OpenGL_View :
         public CoordinateHelper,
         public PaintHolderOpenGLHelper,

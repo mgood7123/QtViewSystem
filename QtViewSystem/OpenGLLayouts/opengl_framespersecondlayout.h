@@ -10,11 +10,12 @@ class OpenGL_FramesPerSecondLayout : public OpenGL_LayerLayout
     ChronoTimer lastFrameTime;
 
     quint64 frames = 0;
-    float fps = 0;
+    float raw_fps = 0;
 
     QList<float> fpsContainer;
     float N = 0;
-    float avg_scale = 10;
+    float avg_scale = 30;
+    float capacity = 20;
     float exponential_fps = 0;
 
     int textSize;

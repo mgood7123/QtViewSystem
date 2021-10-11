@@ -38,7 +38,7 @@ void OpenGL_FramesPerSecondLayout::onPaintGL(QPainter *painter, GLuint *defaultF
     qreal targetFPS = getWindowData()->screen->refreshRate();
 
     QString text;
-    text += "FPS: " + QString::number((int)fps) + "\n";
+    text += "Raw FPS: " + QString::number((int)raw_fps) + "\n";
     text += "Exponential FPS: " + QString::number((int)exponential_fps) + "\n";
     text += "Target FPS: " + QString::number(targetFPS) + "\n";
     text += "Time: " + QString::number(lastFrameTime.difference.millisecondsTotal()) + " ms\n";
@@ -93,15 +93,17 @@ void OpenGL_FramesPerSecondLayout::paintGLToFBO(int w, int h, GLuint *defaultFBO
     frameTime.elapsedTime();
     fpsUpdateTime.elapsedTime();
     if (fpsUpdateTime.elapsed.milliseconds() >= 25) {
+
         fpsUpdateTime.reset();
-        fps = (1000.0 / frameTime.difference.milliseconds());
+
+        raw_fps = (1000.0 / frameTime.difference.milliseconds());
 
         // calculate exponential fps to provide a
         // smoothed out the reading
-        if (fpsContainer.size() == 30) {
+        if (fpsContainer.size() == capacity) {
             fpsContainer.removeFirst();
         }
-        fpsContainer.append(fps);
+        fpsContainer.append(raw_fps);
         for (auto fps : fpsContainer) {
             N = N < avg_scale ? N+1 : N;
             exponential_fps = (exponential_fps*(N-1) + fps)/N;
