@@ -34,6 +34,7 @@ SOURCES += \
     QtViewSystemManual/QtViewSystemManualView.cpp \
     Tools/PixelToNDC.cpp \
     Tools/TimeEngine.cpp \
+    Tools/chronotimer.cpp \
     Tools/lambdathread.cpp \
     Tools/paintholder.cpp \
     main.cpp \
@@ -58,6 +59,7 @@ HEADERS += \
     Tools/TimeEngine.h \
     Tools/TypeSafeKeyValuePropertyAnimators.h \
     Tools/TypeSafePropertyAnimators.h \
+    Tools/chronotimer.h \
     Tools/lambdathread.h \
     Tools/paintholder.h \
     qtopenglviewsystem.h \

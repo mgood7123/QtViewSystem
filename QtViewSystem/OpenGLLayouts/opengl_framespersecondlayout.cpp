@@ -37,13 +37,15 @@ void OpenGL_FramesPerSecondLayout::onPaintGL(QPainter *painter, GLuint *defaultF
     OpenGL_LayerLayout::onPaintGL(painter, defaultFBO);
     qreal targetFPS = getWindowData()->screen->refreshRate();
 
-    QString text =
-            "FPS: " + QString::number(fps) + "\n"
-            + "Target FPS: " + QString::number(targetFPS) + "\n"
-            + "Time: " + QString::number(differenceLastFrame * 1000) + " ms" + "\n"
-            + "Target Time: " + QString::number(1000 / targetFPS) + " ms" + "\n"
-            + "Elapsed: " + QString::number(elapsedLastFrame) + " seconds" + "\n"
-            + "Frames: " + QString::number(frames);
+    QString text;
+    text += "FPS: " + QString::number((int)fps) + "\n";
+    text += "Exponential FPS: " + QString::number((int)exponential_fps) + "\n";
+    text += "Target FPS: " + QString::number(targetFPS) + "\n";
+    text += "Time: " + QString::number(lastFrameTime.difference.millisecondsTotal()) + " ms\n";
+    text += "Target Time: " + QString::number(1000 / targetFPS) + " ms\n";
+    text += "Elapsed: " + QString::number(lastFrameTime.elapsed.secondsTotal()) + ".";
+    text += QString::number(lastFrameTime.elapsed.milliseconds()).rightJustified(3, '0') + "  seconds\n";
+    text += "Frames: " + QString::number(frames);
 
     // text renders as blocks when drawn to a fbo, work around this by using QImage
 
@@ -79,42 +81,32 @@ void OpenGL_FramesPerSecondLayout::onPaintGL(QPainter *painter, GLuint *defaultF
     painter->drawImage(w, image);
 }
 
-double OpenGL_FramesPerSecondLayout::now() {
-    auto now = std::chrono::high_resolution_clock::now().time_since_epoch();
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
-    return static_cast<double>(ms);
-}
-
-void OpenGL_FramesPerSecondLayout::resetElapsedTime()
-{
-    startElapsedTime = now()/1000;
-    previousElapsedTime = startElapsedTime - startElapsedTime;
-    currentElapsedTime = startElapsedTime - startElapsedTime;
-}
-
-void OpenGL_FramesPerSecondLayout::elapsedTime() {
-    previousElapsedTime = currentElapsedTime;
-    currentElapsedTime = now()/1000 - startElapsedTime;
-    elapsed = currentElapsedTime;
-    difference = currentElapsedTime - previousElapsedTime;
-}
-
 void OpenGL_FramesPerSecondLayout::paintGLToFBO(int w, int h, GLuint *defaultFBO)
 {
-    // reset the timer every 30 seconds to avoid drift
-    if (!started || elapsed >= 30) {
-        resetElapsedTime();
+    if (!frameTime.started) {
+        frameTime.reset();
+        fpsUpdateTime.reset();
         frames = 0;
-        started = true;
-    } else {
-        currentElapsedTimeLastFrame = currentElapsedTime;
-        previousElapsedTimeLastFrame = previousElapsedTime;
-        differenceLastFrame = difference;
-        elapsedLastFrame = elapsed;
-        elapsedTime();
     }
     OpenGL_LayerLayout::paintGLToFBO(w, h, defaultFBO);
-    elapsedTime();
     frames++;
-    fps = frames / elapsed;
+    frameTime.elapsedTime();
+    fpsUpdateTime.elapsedTime();
+    if (fpsUpdateTime.elapsed.milliseconds() >= 25) {
+        fpsUpdateTime.reset();
+        fps = (1000.0 / frameTime.difference.milliseconds());
+
+        // calculate exponential fps to provide a
+        // smoothed out the reading
+        if (fpsContainer.size() == 30) {
+            fpsContainer.removeFirst();
+        }
+        fpsContainer.append(fps);
+        for (auto fps : fpsContainer) {
+            N = N < avg_scale ? N+1 : N;
+            exponential_fps = (exponential_fps*(N-1) + fps)/N;
+        }
+    }
+    lastFrameTime = frameTime;
+    frameTime.elapsedTime();
 }

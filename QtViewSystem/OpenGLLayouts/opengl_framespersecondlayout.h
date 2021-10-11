@@ -5,26 +5,18 @@
 
 class OpenGL_FramesPerSecondLayout : public OpenGL_LayerLayout
 {
-
-    double startElapsedTime = 0;
-
-    double currentElapsedTimeLastFrame = 0;
-    double previousElapsedTimeLastFrame = 0;
-    double differenceLastFrame = 0;
-    double elapsedLastFrame = 0;
-
-    double currentElapsedTime = 0;
-    double previousElapsedTime = 0;
-    double difference = 0;
-    double elapsed = 0;
-    bool started = false;
-
-    double now();
-    void resetElapsedTime();
-    void elapsedTime();
+    ChronoTimer frameTime;
+    ChronoTimer fpsUpdateTime;
+    ChronoTimer lastFrameTime;
 
     quint64 frames = 0;
     float fps = 0;
+
+    QList<float> fpsContainer;
+    float N = 0;
+    float avg_scale = 10;
+    float exponential_fps = 0;
+
     int textSize;
     QColor textColor;
 public:

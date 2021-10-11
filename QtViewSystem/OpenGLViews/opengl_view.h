@@ -47,6 +47,7 @@
 #include <Tools/TimeEngine.h>
 #include <Tools/paintholder.h>
 #include <Tools/lambdathread.h>
+#include <Tools/chronotimer.h>
 
 
 // SUPER IMPORTANT: INVALIDATE YOUR VIEWS!!!!!!!!!
