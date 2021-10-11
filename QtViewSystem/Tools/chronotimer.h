@@ -2,6 +2,7 @@
 #define CHRONOTIMER_H
 
 #include <QtGlobal>
+#include <chrono>
 
 class ChronoTimer {
 public:
