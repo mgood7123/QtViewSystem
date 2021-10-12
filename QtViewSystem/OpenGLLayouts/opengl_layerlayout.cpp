@@ -1,6 +1,6 @@
 #include "opengl_layerlayout.h"
 
-void OpenGL_LayerLayout::onMeasure(int width, int height)
+void OpenGL_LayerLayout::onMeasure(qreal width, qreal height)
 {
     if (width == 0 || height == 0) {
         setMeasuredDimensions(0, 0);

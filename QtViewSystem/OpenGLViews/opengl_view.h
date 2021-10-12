@@ -62,15 +62,15 @@ class OpenGL_View :
         public PaintHolderOpenGLHelper,
         public WindowDataHelper
 {
+    bool in_loop = false;
 public:
     enum VISIBILITY {
         VISIBLE, INVISIBLE, GONE
     };
 
-    enum MeasureSpec {
-        MATCH_PARENT = -1,
-        WRAP_CONTENT = -2
-    };
+    // TODO: consider using custom class with explicit math_parent and wrap_content flags
+    static qreal MATCH_PARENT;
+    static qreal WRAP_CONTENT;
 
     class LayoutParams {
     public:
@@ -81,11 +81,11 @@ public:
             GRAVITY_RIGHT
         };
 
-        int width = MATCH_PARENT;
-        int height = MATCH_PARENT;
+        qreal width = MATCH_PARENT;
+        qreal height = MATCH_PARENT;
         GRAVITY gravity = GRAVITY_NONE;
 
-        LayoutParams(int width, int height);
+        LayoutParams(qreal width, qreal height);
 
         template <typename T>
         T * castToType() {
@@ -105,7 +105,7 @@ public:
         virtual ~LayoutParams() = default;
     };
 private:
-    QSize measuredDimensions {0, 0};
+    QSizeF measuredDimensions {0, 0};
     bool calledSetMeasuredDimensions = false;
     static constexpr const char * NO_TAG = "<INTERNAL_VIEW__NO_TAG>";
     QString tag = NO_TAG;
@@ -116,7 +116,7 @@ private:
     GLuint quadVAO = 0, quadVBO = 0;
     GLuint fbo = 0, fbo_color_texture = 0, fbo_depth_renderbuffer = 0;
     int fboWidth = 0, fboHeight = 0;
-    QOpenGLShaderProgram program;
+    static QOpenGLShaderProgram program;
     LayoutParams * layoutParams = nullptr;
     bool alwaysDraw = false;
     bool erased_texture = false;
@@ -165,7 +165,7 @@ protected:
 public:
     PixelToNDC pixelToNDC;
     OpenGL_View * parent = nullptr;
-    float weight = 0;
+    qreal weight = 0;
 
     template <typename T>
     T * castToType() {
@@ -186,20 +186,19 @@ public:
 
     void setLayoutParams(LayoutParams *params);
 
-    constexpr static QSize INVALID_MEASUREMENT_DIMENSION = {-1, -1};
+    void setMeasuredDimensions(qreal width, qreal height);
+    void setMeasuredDimensions(const QSizeF & size);
+    QSizeF getMeasuredDimensions();
+    qreal getMeasuredWidth();
+    qreal getMeasuredHeight();
 
-    void setMeasuredDimensions(int width, int height);
-    void setMeasuredDimensions(const QSize & size);
-    QSize getMeasuredDimensions();
-    int getMeasuredWidth();
-    int getMeasuredHeight();
+    void measure(qreal width, qreal height);
+    virtual void onMeasure(qreal width, qreal height);
 
-    void measure(int width, int height);
-    virtual void onMeasure(int width, int height);
-
-    void buildCoordinates(const QRect & relativeCoordinates);
+    void buildCoordinates(const QRectF & relativeCoordinates);
 
     void onResizeGL(QSize window_size);
+    void onResizeGL(QSizeF window_size);
     virtual void onResizeGL(int window_w, int window_h);
 
     virtual void onAddedToLayout();
@@ -221,6 +220,12 @@ public:
 
     void resizeFBO(int w, int h);
 
+    inline static
+    constexpr int qrealToPixel(qreal pixel) {
+        // round to pixel + 1 so we can downscale
+        return pixel + 0.5;
+    };
+
     QImage createQImage();
 
     QImage createQImage(uint pixel);
@@ -239,11 +244,11 @@ public:
 
     void bindFBO();
 
-    void drawFBO(int w, int h, GLuint * defaultFBO);
+    void drawFBO(qreal w, qreal h, GLuint * defaultFBO);
 
     void destroyFBO();
 
-    virtual void paintGLToFBO(int w, int h, GLuint * defaultFBO);
+    virtual void paintGLToFBO(qreal w, qreal h, GLuint * defaultFBO);
     VISIBILITY getVisibility() const;
     void setVisibility(VISIBILITY newVisibility);
 };

@@ -1,5 +1,9 @@
 #include "opengl_view.h"
 
+QOpenGLShaderProgram OpenGL_View::program = QOpenGLShaderProgram();
+qreal OpenGL_View::MATCH_PARENT = -1.0;
+qreal OpenGL_View::WRAP_CONTENT = -2.0;
+
 QSize OpenGL_View::getWindowSize() { return paintHolder.getSize(); }
 
 int OpenGL_View::getWindowWidth() { return getWindowSize().width(); }
@@ -92,23 +96,28 @@ void OpenGL_View::setLayoutParams(LayoutParams *params) {
     }
 }
 
-void OpenGL_View::measure(int width, int height)
+void OpenGL_View::measure(qreal width, qreal height)
 {
     if (visibility == GONE) return;
     calledSetMeasuredDimensions = false;
     onMeasure(width, height);
     if (!calledSetMeasuredDimensions) {
-        qFatal("invalid measurement, did you forget to call `setMeasuredDimensions(const QSize &);` ?");
+        qFatal("invalid measurement, did you forget to call `setMeasuredDimensions(const QSizeF &);` or `setMeasuredDimensions(qreal, qreal)` ?");
     }
 }
 
-void OpenGL_View::setMeasuredDimensions(int width, int height)
+void OpenGL_View::setMeasuredDimensions(qreal width, qreal height)
 {
     setMeasuredDimensions({width, height});
 }
 
-void OpenGL_View::setMeasuredDimensions(const QSize &size)
+void OpenGL_View::setMeasuredDimensions(const QSizeF &size)
 {
+    if (size.width() == MATCH_PARENT || size.height() == MATCH_PARENT) {
+        qFatal("cannot set measured dimensions to MATCH_PARENT");
+    } else if (size.width() == WRAP_CONTENT || size.height() == WRAP_CONTENT) {
+        qFatal("cannot set measured dimensions to WRAP_CONTENT");
+    }
     calledSetMeasuredDimensions = true;
     canDraw = !size.isEmpty();
     if (measuredDimensions != size) {
@@ -117,25 +126,25 @@ void OpenGL_View::setMeasuredDimensions(const QSize &size)
     }
 }
 
-QSize OpenGL_View::getMeasuredDimensions()
+QSizeF OpenGL_View::getMeasuredDimensions()
 {
     return measuredDimensions;
 }
 
-int OpenGL_View::getMeasuredWidth()
+qreal OpenGL_View::getMeasuredWidth()
 {
     return measuredDimensions.width();
 }
 
-int OpenGL_View::getMeasuredHeight()
+qreal OpenGL_View::getMeasuredHeight()
 {
     return measuredDimensions.height();
 }
 
-void OpenGL_View::onMeasure(int width, int height)
+void OpenGL_View::onMeasure(qreal width, qreal height)
 {
     LayoutParams * params = getLayoutParams();
-    QSize measuredDimensions = QSize{params->width, params->height};
+    QSizeF measuredDimensions = QSizeF{params->width, params->height};
     if (params->width == MATCH_PARENT) {
         measuredDimensions.setWidth(width);
     } else if (params->width == WRAP_CONTENT) {
@@ -151,6 +160,10 @@ void OpenGL_View::onMeasure(int width, int height)
 
 void OpenGL_View::onResizeGL(QSize window_size) {
     onResizeGL(window_size.width(), window_size.height());
+}
+
+void OpenGL_View::onResizeGL(QSizeF window_size) {
+    onResizeGL(qrealToPixel(window_size.width()), qrealToPixel(window_size.height()));
 }
 
 void OpenGL_View::onResizeGL(int window_w, int window_h) {
@@ -176,7 +189,10 @@ void OpenGL_View::onRemovedFromLayout()
     stopAnimation();
 }
 
-void OpenGL_View::onPaintGL(QPainter * painter, GLuint *defaultFBO) {}
+void OpenGL_View::onPaintGL(QPainter * painter, GLuint *defaultFBO) {
+    Q_UNUSED(painter)
+    Q_UNUSED(defaultFBO)
+}
 
 bool OpenGL_View::isLayout() const {
     return false;
@@ -297,6 +313,7 @@ void OpenGL_View::check_glCheckFramebufferStatus(QOpenGLExtraFunctions *gl, GLen
 }
 
 void OpenGL_View::resizeFBO(int w, int h) {
+    qDebug() << "resizing FBO to" << w << "," << h;
     if (fboWidth == w && fboHeight == h) return;
     fboWidth = w;
     fboHeight = h;
@@ -414,7 +431,7 @@ void OpenGL_View::bindFBO() {
     gl->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 }
 
-void OpenGL_View::drawFBO(int w, int h, GLuint *defaultFBO) {
+void OpenGL_View::drawFBO(qreal w, qreal h, GLuint *defaultFBO) {
     auto gl = getOpenGLExtraFunctions();
 
     if (defaultFBO != nullptr) {
@@ -474,20 +491,20 @@ void OpenGL_View::drawFBO(int w, int h, GLuint *defaultFBO) {
 
     program.bind();
 
-    int draw_x = relativeCoordinates.topLeftX;
-    int draw_y = relativeCoordinates.topLeftY;
-    int draw_w = relativeCoordinates.bottomRightX;
-    int draw_h = relativeCoordinates.bottomRightY;
+    qreal draw_x = relativeCoordinates.topLeftX;
+    qreal draw_y = relativeCoordinates.topLeftY;
+    qreal draw_w = relativeCoordinates.bottomRightX;
+    qreal draw_h = relativeCoordinates.bottomRightY;
 
     gl->glEnable(GL_SCISSOR_TEST);
-    gl->glScissor(0, 0, w, h);
-    gl->glViewport(0, 0, w, h);
+    gl->glScissor(0, 0, qrealToPixel(w), qrealToPixel(h));
+    gl->glViewport(0, 0, qrealToPixel(w), qrealToPixel(h));
     pixelToNDC.resize(w, h);
 
-    auto topLeft = pixelToNDC.toNDC<int, float>(draw_x, draw_y, false);
-    auto topRight = pixelToNDC.toNDC<int, float>(draw_w, draw_y, false);
-    auto bottomRight = pixelToNDC.toNDC<int, float>(draw_x, draw_h, false);
-    auto bottomLeft = pixelToNDC.toNDC<int, float>(draw_w, draw_h, false);
+    auto topLeft = pixelToNDC.toNDC<qreal, float>(draw_x, draw_y, false);
+    auto topRight = pixelToNDC.toNDC<qreal, float>(draw_w, draw_y, false);
+    auto bottomRight = pixelToNDC.toNDC<qreal, float>(draw_x, draw_h, false);
+    auto bottomLeft = pixelToNDC.toNDC<qreal, float>(draw_w, draw_h, false);
 
     float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
      // positions                  // texCoords
@@ -535,7 +552,7 @@ void OpenGL_View::destroyFBO() {
     }
 }
 
-void OpenGL_View::paintGLToFBO(int w, int h, GLuint *defaultFBO) {
+void OpenGL_View::paintGLToFBO(qreal w, qreal h, GLuint *defaultFBO) {
     switch (visibility) {
         case OpenGL_View::VISIBLE:
             break;
@@ -587,17 +604,17 @@ void OpenGL_View::paintGLToFBO(int w, int h, GLuint *defaultFBO) {
     }
 }
 
-void OpenGL_View::buildCoordinates(const QRect &relativeCoordinates) {
+void OpenGL_View::buildCoordinates(const QRectF &relativeCoordinates) {
     this->relativeCoordinates = relativeCoordinates;
     if (parent == nullptr) {
         absoluteCoordinates = this->relativeCoordinates;
     } else {
-        int atlx = parent->absoluteCoordinates.topLeftX + this->relativeCoordinates.topLeftX;
-        int atly = parent->absoluteCoordinates.topLeftY + this->relativeCoordinates.topLeftY;
-        int abrx = parent->absoluteCoordinates.topLeftX + this->relativeCoordinates.bottomRightX;
-        int abry = parent->absoluteCoordinates.topLeftY + this->relativeCoordinates.bottomRightY;
+        qreal atlx = parent->absoluteCoordinates.topLeftX + this->relativeCoordinates.topLeftX;
+        qreal atly = parent->absoluteCoordinates.topLeftY + this->relativeCoordinates.topLeftY;
+        qreal abrx = parent->absoluteCoordinates.topLeftX + this->relativeCoordinates.bottomRightX;
+        qreal abry = parent->absoluteCoordinates.topLeftY + this->relativeCoordinates.bottomRightY;
         absoluteCoordinates = CoordinateInfo(atlx, atly, abrx, abry);
     }
 }
 
-OpenGL_View::LayoutParams::LayoutParams(int width, int height) : width(width), height(height) {}
+OpenGL_View::LayoutParams::LayoutParams(qreal width, qreal height) : width(width), height(height) {}

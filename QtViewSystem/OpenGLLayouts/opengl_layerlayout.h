@@ -9,7 +9,7 @@ public:
 
     // OpenGL_View interface
 public:
-    virtual void onMeasure(int width, int height) override;
+    virtual void onMeasure(qreal width, qreal height) override;
 };
 
 #endif // OPENGL_LAYERLAYOUT_H

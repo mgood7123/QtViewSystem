@@ -1,6 +1,6 @@
 #include "opengl_linearlayout.h"
 
-void OpenGL_LinearLayout::onMeasure(int width, int height)
+void OpenGL_LinearLayout::onMeasure(qreal width, qreal height)
 {
     if (width == 0 || height == 0) {
         setMeasuredDimensions(0, 0);
@@ -30,9 +30,9 @@ void OpenGL_LinearLayout::onMeasure(int width, int height)
     }
 
     bool first = true;
-    QRect drawPosition = {0, 0, 0, 0};
-    int section = 0;
-    int prevSection = 0;
+    QRectF drawPosition = {0, 0, 0, 0};
+    float section = 0;
+    float prevSection = 0;
     for (OpenGL_View *view : children) {
         float multiplier = 0;
         auto * l = view->getLayoutParams()->castToType<LinearLayoutParams>();

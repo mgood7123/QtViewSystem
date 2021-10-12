@@ -38,7 +38,7 @@ public:
 protected:
     virtual void onPaintGL(QPainter *painter, GLuint *defaultFBO) override;
 public:
-    virtual void paintGLToFBO(int w, int h, GLuint *defaultFBO) override;
+    virtual void paintGLToFBO(qreal w, qreal h, GLuint *defaultFBO) override;
 };
 
 #endif // OPENGL_FRAMESPERSECONDLAYOUT_H

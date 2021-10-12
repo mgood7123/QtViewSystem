@@ -102,7 +102,7 @@ void QtOpenGLViewSystem::paintGL()
     if (contentView != nullptr) {
         int w = windowData->applyDpiScale(width());
         int h = windowData->applyDpiScale(height());
-        contentView->buildCoordinates({0, 0, w, h});
+        contentView->buildCoordinates({0, 0, static_cast<qreal>(w), static_cast<qreal>(h)});
         contentView->measure(w, h);
         contentView->paintGLToFBO(w, h, nullptr);
     }

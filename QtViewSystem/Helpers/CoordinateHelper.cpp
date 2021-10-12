@@ -4,10 +4,10 @@
 CoordinateHelper::CoordinateInfo::CoordinateInfo(): CoordinateInfo(0, 0, 0, 0)
 {}
 
-CoordinateHelper::CoordinateInfo::CoordinateInfo(int x1, int y1, int x2, int y2): CoordinateInfo({x1, y1, x2, y2})
+CoordinateHelper::CoordinateInfo::CoordinateInfo(float x1, float y1, float x2, float y2): CoordinateInfo({x1, y1, x2, y2})
 {}
 
-CoordinateHelper::CoordinateInfo::CoordinateInfo(const QRect &r):
+CoordinateHelper::CoordinateInfo::CoordinateInfo(const QRectF &r):
     topLeftX(r.x()),
     topLeftY(r.y()),
     bottomRightX(r.width()),
@@ -16,8 +16,8 @@ CoordinateHelper::CoordinateInfo::CoordinateInfo(const QRect &r):
     height(r.height() - r.y())
 {}
 
-QRect CoordinateHelper::CoordinateInfo::toQRect() {
-    return QRect(topLeftX, topLeftY, width, height);
+QRectF CoordinateHelper::CoordinateInfo::toQRectF() {
+    return QRectF(topLeftX, topLeftY, width, height);
 }
 
 QDebug operator<<(QDebug debug, const CoordinateHelper::CoordinateInfo &c)

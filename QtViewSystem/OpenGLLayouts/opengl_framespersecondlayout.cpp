@@ -81,7 +81,7 @@ void OpenGL_FramesPerSecondLayout::onPaintGL(QPainter *painter, GLuint *defaultF
     painter->drawImage(w, image);
 }
 
-void OpenGL_FramesPerSecondLayout::paintGLToFBO(int w, int h, GLuint *defaultFBO)
+void OpenGL_FramesPerSecondLayout::paintGLToFBO(qreal w, qreal h, GLuint *defaultFBO)
 {
     if (!frameTime.started) {
         frameTime.reset();
